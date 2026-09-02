@@ -135,8 +135,37 @@ approval_checklist:
         overview: "Learners attach the SPDX SBOM from module-02 to their signed image as an OCI attestation using cosign attest, then verify and download the attestation envelope — completing the per-student trust chain."
       - title: "Establishing Supply Chain Trust"
         overview: "Learners download Red Hat's published attestation bundle for hi/python:3.12, discover it contains both an SPDX SBOM and a SLSA v0.2 build provenance record, and inspect the Tekton Chains builder identity, hermetic flag, and pinned input materials."
-    rcars_overlap_pct: null
-    rcars_top_matches: []
+    rcars_overlap_pct: 80
+    rcars_top_matches:
+      - title: "Product Enablement: Red Hat Advanced Developer Suite on RHEL (TL3)"
+        ci_name: "openshift-cnv.rhads-rhel-lab.prod"
+        url: "https://catalog.demo.redhat.com/catalog?item=openshift-cnv.rhads-rhel-lab.prod"
+        relevance_score: 80
+        why_it_fits: "This lab covers several directly relevant topics including cosign image signing, SBOM generation with Syft, SLSA provenance attestations, and software supply chain security practices that align well with the request."
+        workloads: []
+      - title: "Build Secure, Streamlined Developer Workflows with Red Hat Advanced Developer Suite"
+        ci_name: "published.rhads-secure-dev-workflows.prod"
+        url: "https://catalog.demo.redhat.com/catalog?item=published.rhads-secure-dev-workflows.prod"
+        relevance_score: 77
+        why_it_fits: "This workshop covers several overlapping topics including SBOM ingestion/analysis, Cosign-based keyless signing, SLSA provenance attestations, and container image vulnerability scanning, which align with the core skills the request targets."
+        workloads:
+          - role: "bootstrap"
+            collection: "rhpds.build_secured_dev_workflows"
+          - role: "trusted_artifact_signer"
+            collection: "rhpds.build_secured_dev_workflows"
+          - role: "trusted_profile_analyzer"
+            collection: "rhpds.build_secured_dev_workflows"
+      - title: "Product Enablement: Red Hat Advanced Developer Suite (TL3)"
+        ci_name: "pert.redhat-rhads.prod"
+        url: "https://catalog.demo.redhat.com/catalog?item=pert.redhat-rhads.prod"
+        relevance_score: 72
+        why_it_fits: "This workshop includes modules on container image signing and verification, SBOM creation and management, provenance and attestations, and vulnerability management using Red Hat Trusted Artifact Signer and Trusted Profile Analyzer."
+        workloads:
+          - role: "ocp4_workload_cert_manager"
+            collection: "agnosticd.core_workloads"
+          - role: "ocp4_workload_external_odf"
+            collection: "agnosticd.core_workloads"
+    catalog_gap: "The existing catalog teaches supply chain security through enterprise OCP-native tooling (RHTAS, RHTPA, Tekton Chains on OpenShift). This lab fills a distinct gap: a RHEL VM-only, CLI-first, no-OCP lab that delivers the same core concepts — CVE scanning, SBOMs, image signing, and SLSA provenance inspection — using Grype, Syft, Cosign, and Skopeo, making it accessible to teams and learners who do not use OpenShift."
     rejections: []
 
   infra:
