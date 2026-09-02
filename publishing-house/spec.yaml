@@ -34,31 +34,31 @@ spec:
     - id: module-01
       title: "Vulnerability Scanning Container Images"
       duration_min: 20
-      status: not_started
+      status: in_progress
     - id: module-02
       title: "Working with SBOMs"
       duration_min: 15
-      status: not_started
+      status: in_progress
     - id: module-03
       title: "Verifying Published Signatures"
       duration_min: 15
-      status: not_started
+      status: in_progress
     - id: module-04
       title: "Image Signing Setup (Push and Generate Keys)"
       duration_min: 20
-      status: not_started
+      status: in_progress
     - id: module-05
       title: "Image Signing and Verification"
       duration_min: 20
-      status: not_started
+      status: in_progress
     - id: module-06
       title: "Image SBOM Attestation"
       duration_min: 15
-      status: not_started
+      status: in_progress
     - id: module-07
       title: "Establishing Supply Chain Trust"
       duration_min: 15
-      status: not_started
+      status: in_progress
   # [{id, title, duration_min}] — written by intake Phase 4; id is stable (e.g. module-01)
   environment:
     platform: "rhel-vms"       # ocp | rhel-vms — determines which sizing fields apply
@@ -106,7 +106,7 @@ spec:
 development:
   automation:
     ansible:
-      status: not_started
+      status: in_progress
   e2e:
     status: not_started
   healthCheck:
