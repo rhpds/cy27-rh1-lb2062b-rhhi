@@ -2,7 +2,7 @@
 site:
   title: Container Image Scanning, SBOMs, and Signing
   url: https://github.com/rhpds/showroom_template_zero
-  start_page: modules::module-01.adoc
+  start_page: modules::module-01-vulnerability-scanning.adoc
 content:
   sources:
     - url: ./
