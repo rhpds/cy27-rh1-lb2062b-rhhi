@@ -1,0 +1,113 @@
+= Image Signing Setup
+
+.*Module Overview*
+[sidebar]
+--
+*Objectives:*
+
+* Push a container image to the local SSL-enabled registry
+* Capture the image digest for use with cosign
+* Generate a cosign key pair for signing
+--
+
+[[local-registry]]
+== Your Local Container Registry
+
+This lab environment includes a private container registry running at `registry-{guid}.{domain}`. 
+It is secured with a TLS certificate issued by ZeroSSL, so standard container tools work without any insecure-registry configuration.
+
+The registry requires no login -- it is intentionally open for this lab so you can focus on signing rather than credential management.
+
+[TIP]
+====
+The `REGISTRY` environment variable pointing to your local registry was set during lab setup and persists in your terminal session via `~/.bashrc`. If it isn't working in your session, run:
+
+[source,text]
+----
+source ~/.bashrc
+----
+
+You can check the current value at any time with `echo $REGISTRY`.
+====
+
+[[push-image]]
+== Tag and Push the Image
+
+The `rhhi-demo:hardened` image was built during lab setup and lives in local Podman storage. 
+To sign it, cosign needs the image to be in an OCI registry. 
+Tag it for your local registry and push it. 
+The `--digestfile` flag writes the registry-assigned digest to `~/image.digest` for later use.
+
+[source,bash,role=execute,subs=attributes+]
+----
+podman tag rhhi-demo:hardened registry-{guid}.{domain}/rhhi-demo:hardened
+----
+
+[source,bash,role=execute,subs=attributes+]
+----
+podman push --digestfile ~/image.digest registry-{guid}.{domain}/rhhi-demo:hardened
+----
+
+[[capture-digest]]
+== Capture the Image Digest
+
+Cosign 2.0 requires digest-based references for signing. 
+Tags like `:v1` are mutable -- anyone could overwrite them -- so signing a tag would be insecure. 
+The image digest is a content-addressed SHA256 hash that is immutable.
+This digest is created by the registry when the image is pushed and can be used to uniquely identity that image for standard operations as well as signing.
+
+Let's set the recorded digest as an environment variable to make our later commands a little more readable.
+[source,bash,role=execute]
+----
+IMAGE_DIGEST=$(cat ~/image.digest)
+echo "Image digest: ${IMAGE_DIGEST}"
+----
+
+.*Expected output:*
+----
+Image digest: sha256:abc123...
+----
+
+[[generate-keys]]
+== Generate a Cosign Key Pair
+
+Cosign uses a key pair for signing and verification of a digital signature. 
+The current recommedation is to use keyless signing, but that requires access to a certifcate authority like Fulcio to work. 
+For this lab we use a local key pair with an empty passphrase via the environment variable so the commands don't prompt interactively.
+
+[TIP]
+====
+*Cosign Key Strategies*
+
+* *Development*: Generate local key pairs (as we do here)
+* *Production*: Keyless signing with OIDC identity (GitHub, GitLab, Google)
+* *Enterprise*: KMS-backed keys -- AWS KMS, Azure Key Vault, GCP KMS, HashiCorp Vault
+* *High security*: Hardware Security Modules (HSM)
+
+Never commit local keys like `cosign.key` to a git repository. Always check the `cosign` documentation for https://docs.sigstore.dev/cosign/key_management/overview/[an authoritative list of keystores^].
+====
+
+[source,bash,role=execute]
+----
+export COSIGN_PASSWORD=""
+----
+
+[source,bash,role=execute]
+----
+cosign generate-key-pair
+----
+
+.*Expected output:*
+----
+Private key written to cosign.key
+Public key written to cosign.pub
+----
+
+The private key (`cosign.key`) is what you'll use to *sign*. 
+The public key (`cosign.pub`) is what consumers use to *verify*. 
+Share the public key widely -- keep the private key secret.
+
+== Summary
+
+Your image is in the registry and you have a key pair ready. 
+In the next module, you'll sign the image and verify the signature.

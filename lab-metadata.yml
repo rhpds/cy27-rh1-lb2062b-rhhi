@@ -1,0 +1,53 @@
+# lab-metadata.yml
+# Single Point of Truth for Lab Information
+
+lab:
+  name: "Security operations with Red Hat Hardened Images CVE scanning and image signing"
+  shortname: "zt-scan-sign"
+  maintainer: "Matt Micene (mmicene@redhat.com)" 
+  
+  description:
+    summary: "In this lab you will explore Red Hat Hardeded Images through the lens of standard security tools"
+    goal: "You'll look at the contents of an image for CVEs and software.
+    You'll understand how images can have additional metadata attached in the registry"
+    concepts:
+      - "CVE scanning"
+      - "SBOM management"
+      - "Image signing and attestations"
+    use_case: "Get familliar with the new Red Hat Hardened Images security model"
+    time_to_complete: "25" # time in minutes
+    
+  # Git references for deployment
+  # Use automated tag tied to a release for production, main for development
+  git_ref:
+    production: "prod"
+    development: "main"
+
+# DYNAMIC EXTRACTION SOURCES:
+# ===========================
+#
+# GENERATED FILES:
+# description.adoc: Generated from lab.description (goal, concepts, use_case)
+# README.md: Generated from configuration extraction (maintainer, summary, instances, networks, firewall)
+# dev.yaml: Generated using git_ref.development
+# prod.yaml: Generated using git_ref.production
+#
+# Example usage:
+# lab:
+#   name: "Red Hat OpenShift Networking Basics"
+#   shortname: "zt-networking-basics"
+#   
+#   description:
+#     summary: "Learn the fundamentals of networking in Red Hat OpenShift"
+#     goal: "Understand OpenShift networking concepts and configuration"
+#     concepts:
+#       - "OpenShift Services"
+#       - "Routes and Ingress"
+#       - "Network Policies"
+#     use_case: "Configure secure networking for containerized applications"
+#   
+#   git_ref:
+#     production: "prod"
+#     development: "dev"
+#
+#   maintainer: "Wilson Harris (wharris@redhat.com)"

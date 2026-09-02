@@ -1,0 +1,29 @@
+---
+
+antora:
+  name: modules
+  dir: www
+  modules:
+    - name: module-01
+      label: "Vulnerability Scanning"
+      solveButton: false
+    - name: module-02
+      label: "SBOM Generation"
+      solveButton: false
+    - name: module-03
+      label: "Verify Published Signatures"
+      solveButton: false
+    - name: module-04
+      label: "Push and Generate Keys"
+      solveButton: false
+    - name: module-05
+      label: "Sign and Verify"
+      solveButton: false
+    - name: module-06
+      label: "SBOM Attestation"
+      solveButton: false
+
+tabs:
+  - name: ">_ terminal"
+    url: /wetty
+

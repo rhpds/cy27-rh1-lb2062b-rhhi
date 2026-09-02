@@ -1,0 +1,3 @@
+---
+# By default egress traffic is not allowed, define below the ports allowed.
+- name: default

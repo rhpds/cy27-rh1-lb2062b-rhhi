@@ -1,0 +1,177 @@
+= Working with SBOMs
+
+.*Module Overview*
+[sidebar]
+--
+*Learning Objectives:*
+
+* Understand what a Software Bill of Materials (SBOM) is and why it matters
+* Generate human-readable package tables with Syft
+* Create a machine-readable SPDX-JSON SBOM for compliance
+* Query SBOM contents with `jq`
+--
+
+[[introduction]]
+== Introduction
+
+Vulnerability scanning tells you about known CVEs today, but software supply chain compliance also requires you to understand *what* is in your images — now and in the future. A Software Bill of Materials (SBOM) is that inventory.
+
+SBOMs are essential for:
+
+* **Supply chain security** — know exactly what packages and libraries are in your images
+* **Compliance** — meet regulatory requirements like NIST SP 800-218, the EU Cyber Resilience Act, and Executive Order 14028
+* **Vulnerability management** — when a new CVE is disclosed, quickly identify which images are affected without re-scanning everything
+
+[[human-readable]]
+== Step 1: View a Human-Readable Package Table
+
+Syft can generate a quick summary in table format. 
+Let's see what's in `rhhi-demo:hardened`:
+
+[source,bash,role=execute]
+----
+syft rhhi-demo:hardened -o table
+----
+
+.*Expected output (excerpt):*
+----
+NAME                VERSION    TYPE
+flask               3.1.1      python
+werkzeug            3.1.3      python
+click               8.1.8      python
+jinja2              3.1.5      python
+markupsafe          3.0.2      python
+itsdangerous        2.2.0      python
+blinker             1.9.0      python
+...
+python3             3.12.13    rpm
+python3-libs        3.12.13    rpm
+glibc               2.34-125   rpm
+openssl-libs        3.2.2-6    rpm
+----
+
+Notice that Syft identifies not just RPMs from the included rpmdb, but the application dependencies.
+
+* `python` packages — Flask and its runtime dependencies installed via pip
+* `rpm` packages — system libraries from the hardened base image
+
+This is another way to quickly examine a distroless image when standard tricks like `rpm -qa` aren't available.
+
+The page for a specific base image, https://images.redhat.com/?name=python&tab=sbom[the python runtime for example^], will also show an SBOM tab with a search box if you are looking for any particular package or library in a published runtime.
+There's also a link to the published SPDX, we'll talk more about that format next.
+[TIP]
+====
+Having access to vendor provided SBOMs and being able to create SBOMs for your applications are important to the verification of created images.
+====
+
+[[spdx-sbom]]
+== Step 2: Generate a Machine-Readable SPDX SBOM
+
+A table is useful for human review, but compliance workflows need machine-readable output. 
+There are several standard SBOM formats; we'll use Software Package Data Exchange (SPDX), an ISO/IEC standard (ISO/IEC 5962:2021).
+
+Generate the SBOM for our Flask application:
+
+[source,bash,role=execute]
+----
+syft rhhi-demo:hardened -o spdx-json=~/rhhi-demo.spdx
+----
+
+.*Expected output:*
+----
+ ✔ Loaded image                                           rhhi-demo:hardened
+ ✔ Parsed image  sha256:9b2e4f6a...
+ ✔ Cataloged contents   a3c7d9e1...
+   ├── ✔ Packages                        [68 packages]  
+   ├── ✔ Executables                     [184 executables]  
+   ├── ✔ File metadata                   [3,064 locations]  
+   └── ✔ File digests                    [3,064 files]  
+----
+
+[[inspect-sbom]]
+== Step 3: Inspect the SBOM
+
+The SPDX format is a JSON file. Use `jq` to query it for the number of packages installed:
+
+[source,bash,role=execute]
+----
+jq '.packages | length' ~/rhhi-demo.spdx
+----
+
+.*Expected output:*
+----
+69
+----
+
+[NOTE]
+====
+The package count from `jq` may differ slightly from Syft's cataloged count because the SPDX format includes the image itself as a top-level package entry alongside its contents. Images are still being reviewed to remove unnecessary packages, which may also change package counts from the time of writing.
+====
+
+You can also explore individual package entries:
+
+[source,bash,role=execute]
+----
+jq '.packages[0]' ~/rhhi-demo.spdx
+----
+[source,json]
+----
+{
+  "name": "alternatives",
+  "SPDXID": "SPDXRef-Package-rpm-alternatives-ea955329131d1bd7",
+  "versionInfo": "1.33-5.1.hum1",
+  "supplier": "NOASSERTION",
+  "downloadLocation": "NOASSERTION",
+  "filesAnalyzed": true,
+  "packageVerificationCode": {
+    "packageVerificationCodeValue": "3f0b3bbfbb9d5ef4eb7571572a46c9c3bde7fc6d"
+  },
+  "sourceInfo": "acquired package info from RPM DB: /usr/lib/sysimage/rpm/rpmdb.sqlite",
+  "licenseConcluded": "NOASSERTION",
+  "licenseDeclared": "GPL-2.0-only",
+  "copyrightText": "NOASSERTION",
+  "externalRefs": [
+    {
+      "referenceCategory": "SECURITY",
+      "referenceType": "cpe23Type",
+      "referenceLocator": "cpe:2.3:a:alternatives:alternatives:1.33-5.1.hum1:*:*:*:*:*:*:*"
+    },
+    {
+      "referenceCategory": "PACKAGE-MANAGER",
+      "referenceType": "purl",
+      "referenceLocator": "pkg:rpm/redhat/alternatives@1.33-5.1.hum1?arch=x86_64&distro=hummingbird-20251124&upstream=chkconfig-1.33-5.1.hum1.src.rpm"
+    }
+  ]
+}
+----
+Each package entry includes name, version, license, checksums, and supplier information — everything needed for compliance reporting.
+
+[[sbom-formats]]
+== SBOM Formats
+
+[NOTE]
+====
+**Supported SBOM formats in Syft:**
+
+* **SPDX-JSON** (`spdx-json`) — ISO/IEC 5962:2021, widely supported by compliance tools
+* **CycloneDX** (`cyclonedx-json`) — OWASP standard, popular in DevSecOps pipelines
+* **Table** (`table`) — human-readable, for quick review
+* **JSON** (`json`) — Syft's native format with additional metadata
+
+For compliance requirements, use `spdx-json` or `cyclonedx-json`. Both formats are accepted by tools like FOSSA, Dependency-Track, and grype.
+====
+
+[[summary]]
+== Summary
+
+In this module, you explored SBOMs for `rhhi-demo:hardened`.
+Having a comprehensive list of the components of images is not only needed for some compliance standards, it's also useful to reason about your applications and how they are delivered.
+You'll see what can be done with this SBOM in a later module.
+
+.*What You've Accomplished*
+
+* Generated a human-readable package listing
+* Created a machine-readable SPDX-JSON SBOM 
+* Queried the SBOM with `jq` 
+
+In the next module, we'll talk about another securtiy focused feature of images, signatures.
