@@ -1,0 +1,83 @@
+= Container Image Scanning, SBOMs, and Signing
+:navtitle: Welcome
+
+== Welcome
+
+This hands-on lab teaches you how to build a complete container image supply chain using open-source tooling on Red Hat Enterprise Linux.
+You will work with a pre-built application based on Red Hat Hardened Images (`hi/python:3.12`) and progress through seven modules covering vulnerability scanning, SBOM generation, image signing, and supply chain provenance inspection.
+By the end, you will have built a full trust chain — from CVE scan to SLSA provenance — entirely from the command line, with no OpenShift required.
+
+== Who this lab is for
+
+*Audience:* DevSecOps practitioners, security-conscious developers, and platform engineers
+
+*Level:* Intermediate
+
+*Duration:* ~2 hours
+
+== Prerequisites
+
+* Basic Linux command-line proficiency (shell navigation, pipes, file redirection)
+* Familiarity with container concepts: image, registry, tag, and digest
+* Basic understanding of public/private key cryptography (key pairs, signing, verification)
+* No OpenShift or Kubernetes experience needed
+
+== What you will learn
+
+By the end of this lab you will be able to:
+
+. Scan container images using Grype to identify CVE exposure and compare vulnerability counts between a Red Hat Hardened Image and a UBI10-based image
+. Generate machine-readable SPDX-JSON SBOMs using Syft and inspect package metadata, supplier data, and PURL references
+. Verify published cryptographic image signatures using Cosign against Red Hat's official public keys
+. Configure a per-student TLS-enabled OCI registry, push images by immutable digest, and mirror a vendor image using Skopeo
+. Sign container images by digest using Cosign and verify OCI signature artifacts as a downstream consumer would
+. Attest a signed SBOM to a container image using `cosign attest` and verify the attestation envelope
+. Analyze vendor-published SLSA build provenance records to trace build identity, hermetic flag, and pinned input materials
+. Build a complete image supply chain trust model spanning scanning, SBOM generation, signing, and provenance attestation
+
+== Lab modules
+
+[cols="1,4,1",options="header"]
+|===
+| Module | Title | Duration
+
+| 1
+| xref:module-01-vulnerability-scanning.adoc[Vulnerability Scanning Container Images]
+| 20 min
+
+| 2
+| xref:module-02-sbom-generation.adoc[Working with SBOMs]
+| 15 min
+
+| 3
+| xref:module-03-verifying-signatures.adoc[Verifying Published Signatures]
+| 15 min
+
+| 4
+| xref:module-04-signing-setup.adoc[Image Signing Setup (Push and Generate Keys)]
+| 20 min
+
+| 5
+| xref:module-05-signing-verification.adoc[Image Signing and Verification]
+| 20 min
+
+| 6
+| xref:module-06-sbom-attestation.adoc[Image SBOM Attestation]
+| 15 min
+
+| 7
+| xref:module-07-supply-chain-trust.adoc[Establishing Supply Chain Trust]
+| 15 min
+
+| |  *Total* | *~2 hours*
+|===
+
+== Environment
+
+Your lab environment consists of a single RHEL 10 VM with rootless Podman pre-configured.
+Two container images are already loaded before you start: `rhhi-demo:hardened` (based on `hi/python:3.12`) and `rhhi-demo:ubi` (equivalent app on UBI10).
+A per-student TLS-enabled OCI registry is available at `registry-{guid}.{domain}`.
+Grype, Syft, Cosign, Skopeo, and jq are pre-installed.
+
+[.text-center]
+xref:module-01-vulnerability-scanning.adoc[Start the lab →]
