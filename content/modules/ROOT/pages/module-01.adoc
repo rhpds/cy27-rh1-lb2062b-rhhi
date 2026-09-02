@@ -14,12 +14,15 @@
 [[introduction]]
 == Introduction
 
-Building applications using Red Hat Hardened Images is only the first step. 
-In this lab, you'll learn how to analyze the security posture of your container images using industry-standard tools.
+Every image in this lab comes from Red Hat, a trusted source.
+The question this module answers is not *whether* to trust that source, but *which* starting point gives an application the cleanest foundation to build on.
+A base image you inherit carries its packages -- and every CVE in them -- into everything you ship on top of it.
+Choosing a low-noise baseline means fewer vulnerabilities to triage for the life of the application.
 
+You'll use industry-standard tools to measure that noise for two different starting points.
 Two application images are pre-built and waiting for you:
 
-* `rhhi-demo:hardened` — a Flask web app built using Red Hat Hardened Images as the runtime base (`hi/python:3.12`), using the included `pip` to nstall the application dependecies. 
+* `rhhi-demo:hardened` — a Flask web app built using Red Hat Hardened Images as the runtime base (`hi/python:3.12`), using the included `pip` to install the application dependencies. 
 * `rhhi-demo:ubi` — the same Flask app built from the standard UBI10 base image (`ubi10/ubi`) with Python 3.12 and pip installed via dnf, a common real-world pattern for containerizing Python applications
 
 Both images run the same application code and the same version of Python 3.12. 
@@ -185,20 +188,23 @@ This flag and others will filter the output for any scan. The full options and o
 
 **Key Insight:**
 
-* **Hardened image** (`rhhi-demo:hardened`): Minimized image tracking upstream to deliver new images as quickly as changes are available.
-* **UBI image** (`rhhi-demo:ubi`): General purpose base image tracking RHEL to deliver backported fixes for maximum flexibility and supportability.
+Both starting points come from the same trusted source; the difference is the *noise* each one hands you to triage.
 
-Both images run the same Flask app on the same Python. 
+* **Hardened image** (`rhhi-demo:hardened`): Minimized image tracking upstream to deliver new images as quickly as changes are available. Few packages means the CVEs that do appear are real signal.
+* **UBI image** (`rhhi-demo:ubi`): General purpose base image tracking RHEL to deliver backported fixes for maximum flexibility and supportability. A larger package set carries a long low/medium tail -- often unreachable, awaiting a backport -- that still costs triage effort to evaluate.
+
+Both images run the same Flask app on the same Python.
 The CVE difference comes entirely from the base image — the hardened runtime includes only what a Python application needs at runtime, while even a minimal UBI base carries package management infrastructure and general-purpose system tools. 
 Every extra package is a potential CVE surface.
 Within the UBI family, there are additional types beyond the standard image used here that also address this sort of package reduction.
 
-Both images include the Python dependecies for Flask (`pip install flask`), so any CVEs in the application would be common.
+Both images include the Python dependencies for Flask (`pip install flask`), so any CVEs in the application would be common.
 
 [[summary]]
 == Summary
 
 The choice of starting point can greatly impact the amount of triage required by teams to secure an application.
+Starting from a low-noise baseline is the first link in a chain you'll extend through the rest of this lab: a clean foundation you can inventory, verify, and carry forward with confidence.
 While this is not the only factor when considering base image choices, it's important to understand how the different life cycle choices influence the results.
 
 

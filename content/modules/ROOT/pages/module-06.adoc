@@ -108,57 +108,17 @@ jq -r '.payload' cosign.sbom | base64 -d | jq '.predicate.packages | length'
 69
 ....
 
-The SBOMs published for Red Hat images can be downloaded and processed the same way.
-[source,bash,role=execute,subs=attributes+]
-----
-cosign download attestation --output-file redhat.sbom \
-  {rhhi-registry}/python:3.12
-----
-
-Notice the file type is slightly different than the signature we attached.
-[source,bash,role=execute]
-----
-file redhat.sbom
-----
-....
-redhat.sbom: New Line Delimited JSON text data
-....
-
-The DSSE envelope attestations provided by Red Hat include other types of provenance than just signatures.
-[source,bash,role=execute]
-----
-jq -r '.payload' redhat.sbom | base64 -d | jq '.predicate.relationships'
-----
-[source,json]
-----
-[
-  {
-    "relatedSpdxElement": "SPDXRef-image-index",
-    "relationshipType": "DESCRIBES",
-    "spdxElementId": "SPDXRef-DOCUMENT"
-  },
-  {
-    "relatedSpdxElement": "SPDXRef-image-index",
-    "relationshipType": "VARIANT_OF",
-    "spdxElementId": "SPDXRef-image-python-3-12--hummingbird--default-2f9a71f9de69ca4cc34c02dba14b391b25b7e81b477b4fa0994215ae796b1aad"
-  },
-  {
-    "relatedSpdxElement": "SPDXRef-image-index",
-    "relationshipType": "VARIANT_OF",
-    "spdxElementId": "SPDXRef-image-python-3-12--hummingbird--default-0d48912e648ae8e2f59e644fc9ef6cdbf8c946268270f5e32ff1773305f7c2b3"
-  }
-]
-----
-
 == Summary
 
-You've established a complete chain of trust for your container image:
+You've established a complete chain of trust for your own container image:
 
 * *Scanning*: Confirmed zero CVEs in the hardened image at ship time
 * *SBOM*: Generated a machine-readable package inventory for compliance
 * *Signature*: Proves the image hasn't been tampered with since it was signed
 * *SBOM Attestation*: Proves the SBOM belongs to this specific image digest
 * *Verification*: Anyone with the public key can verify the image and its SBOM
+
+Every link you've added -- signature and attestation -- is one Red Hat also produces for the images you inherited. In the next module you'll look at the link that sits *before* yours: the build provenance the source attaches to prove where its images came from.
 
 .*Production Best Practices*
 

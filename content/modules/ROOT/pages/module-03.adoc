@@ -14,9 +14,9 @@
 [[introduction]]
 == Introduction
 
-You've started with a minimized base, inventoried the contents of your application. 
-To ensure your supply chain, how do you prove that a container image you downloaded is authentic and hasn't been tampered with? 
-The answer is cryptographic signing. 
+You've started with a minimized base and inventoried the contents of your application.
+Red Hat is the trusted source for these images -- the question is not whether to trust that source, but how to confirm the artifact actually in your hands is the genuine one it published, unchanged in transit.
+That confirmation is what keeps the chain from the source to you intact, and the answer is cryptographic signing.
 
 In this module, you'll use `cosign` to verify the signatures that Red Hat publishes on its hardened images — including `hi/python:3.12`, the base your lab image is built on.
 
@@ -123,6 +123,9 @@ The signature is the Base64 encoded `body`.
 
 == Summary
 
-You've verified that Red Hat's published images carry valid, cryptographically verifiable signatures. 
-The same key that protects `hi/python:3.12` — your app's base — also protects every other Red Hat image. 
-In the next module, you'll explore how to sign your own images.
+You've verified that Red Hat's published images carry valid, cryptographically verifiable signatures.
+The same key that protects `hi/python:3.12` — your app's base — also protects every other Red Hat image.
+
+So far you've been on the receiving end of that chain, confirming artifacts a trusted source published.
+In the next modules you start taking control of these images yourself: bringing your application image into your own registry and putting your own signature on it.
+That is where maintaining the chain gets more interesting -- and where you'll see what happens to those inherited signatures once an image moves.
