@@ -5,25 +5,25 @@ antora:
   dir: www
   modules:
     - name: module-01-vulnerability-scanning
-      label: "Vulnerability Scanning"
+      label: "Vulnerability Scanning Container Images"
       solveButton: false
     - name: module-02-sbom-generation
-      label: "SBOM Generation"
+      label: "Working with SBOMs"
       solveButton: false
     - name: module-03-verifying-signatures
-      label: "Verify Published Signatures"
+      label: "Verifying Published Signatures"
       solveButton: false
     - name: module-04-signing-setup
-      label: "Push and Generate Keys"
+      label: "Image Signing Setup (Push and Generate Keys)"
       solveButton: false
     - name: module-05-signing-verification
-      label: "Sign and Verify"
+      label: "Image Signing and Verification"
       solveButton: false
     - name: module-06-sbom-attestation
-      label: "SBOM Attestation"
+      label: "Image SBOM Attestation"
       solveButton: false
     - name: module-07-supply-chain-trust
-      label: "Supply Chain Trust"
+      label: "Establishing Supply Chain Trust"
       solveButton: false
 
 tabs:
