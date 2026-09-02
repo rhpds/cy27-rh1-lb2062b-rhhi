@@ -1,6 +1,91 @@
 #!/bin/bash
 USER=rhel
 
+# Installs certbot, requests a ZeroSSL cert (retried against transient ACME failures),
+# starts a TLS registry, and validates it responds. Pulled raw from lab-setup/common.sh
+# so this lab does not depend on the library. Requires ZEROSSL_EAB_KEY_ID and
+# ZEROSSL_HMAC_KEY. Usage: setup_ssl_registry <hostname> [htpasswd_file]
+setup_ssl_registry() {
+  local HOST="$1"
+  local HTPASSWD="$2"
+  local CERT_DIR="/etc/letsencrypt/live/${HOST}"
+  local MAX_CERT_RETRIES=3
+  local RETRY=0
+
+  dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-10.noarch.rpm
+  dnf install -y certbot
+
+  while [ $RETRY -lt $MAX_CERT_RETRIES ]; do
+    set +x
+    certbot certonly \
+      --eab-kid "${ZEROSSL_EAB_KEY_ID}" \
+      --eab-hmac-key "${ZEROSSL_HMAC_KEY}" \
+      --server "https://acme.zerossl.com/v2/DV90" \
+      --standalone --preferred-challenges http \
+      -d "${HOST}" \
+      --non-interactive --agree-tos -m trackbot@instruqt.com || true
+    set -x
+
+    if [ -f "${CERT_DIR}/fullchain.pem" ] && [ -f "${CERT_DIR}/privkey.pem" ]; then
+      echo "SSL certificate obtained for ${HOST}" >> /tmp/progress.log
+      break
+    fi
+
+    RETRY=$((RETRY + 1))
+    echo "Certificate attempt ${RETRY} of ${MAX_CERT_RETRIES} failed, retrying in 15 seconds..." >> /tmp/progress.log
+    sleep 15
+  done
+
+  if [ ! -f "${CERT_DIR}/fullchain.pem" ] || [ ! -f "${CERT_DIR}/privkey.pem" ]; then
+    echo "FATAL: Failed to obtain SSL certificate for ${HOST} after ${MAX_CERT_RETRIES} attempts" >> /tmp/progress.log
+    exit 1
+  fi
+
+  [ -f /var/log/letsencrypt/letsencrypt.log ] && rm /var/log/letsencrypt/letsencrypt.log || true
+
+  if [ -n "${HTPASSWD}" ]; then
+    podman run -d \
+      --name registry \
+      -p 443:5000 \
+      -v "${HTPASSWD}":/auth/htpasswd:ro \
+      -e REGISTRY_AUTH=htpasswd \
+      -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry Realm" \
+      -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd \
+      -v "${CERT_DIR}/fullchain.pem":/certs/fullchain.pem:ro \
+      -v "${CERT_DIR}/privkey.pem":/certs/privkey.pem:ro \
+      -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/fullchain.pem \
+      -e REGISTRY_HTTP_TLS_KEY=/certs/privkey.pem \
+      quay.io/mmicene/registry:2
+  else
+    podman run -d \
+      --name registry \
+      -p 443:5000 \
+      -v "${CERT_DIR}/fullchain.pem":/certs/fullchain.pem:ro \
+      -v "${CERT_DIR}/privkey.pem":/certs/privkey.pem:ro \
+      -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/fullchain.pem \
+      -e REGISTRY_HTTP_TLS_KEY=/certs/privkey.pem \
+      quay.io/mmicene/registry:2
+  fi
+
+  local MAX_REG_RETRIES=5
+  local HTTP_CODE
+  RETRY=0
+  while [ $RETRY -lt $MAX_REG_RETRIES ]; do
+    HTTP_CODE=$(curl -sk -o /dev/null -w '%{http_code}' "https://${HOST}/v2/" 2>/dev/null) || true
+    if [ "${HTTP_CODE}" = "401" ] || [ "${HTTP_CODE}" = "200" ]; then
+      echo "Registry responding at ${HOST} (HTTP ${HTTP_CODE})" >> /tmp/progress.log
+      return 0
+    fi
+    RETRY=$((RETRY + 1))
+    echo "Registry not responding yet (HTTP ${HTTP_CODE}), retry ${RETRY} of ${MAX_REG_RETRIES}..." >> /tmp/progress.log
+    sleep 5
+  done
+
+  echo "FATAL: Registry not responding after ${MAX_REG_RETRIES} attempts" >> /tmp/progress.log
+  podman logs registry >> /tmp/progress.log 2>&1
+  exit 1
+}
+
 echo "Adding wheel" > /root/post-run.log
 usermod -aG wheel rhel
 
@@ -36,34 +121,10 @@ curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | \
   sh -s -- -b /usr/local/bin ${SYFT_VERSION}
 echo "Syft installed" >> /tmp/progress.log
 
-# Install certbot
-dnf install -y certbot
-echo "Certbot installed" >> /tmp/progress.log
-
-# Get ZeroSSL certificate for the registry hostname
-set +x
-certbot certonly \
-  --eab-kid "${ZEROSSL_EAB_KEY_ID}" \
-  --eab-hmac-key "${ZEROSSL_HMAC_KEY}" \
-  --server "https://acme.zerossl.com/v2/DV90" \
-  --standalone --preferred-challenges http \
-  -d registry-"${GUID}"."${DOMAIN}" \
-  --non-interactive --agree-tos -m trackbot@instruqt.com -v
-rm -f /var/log/letsencrypt/letsencrypt.log
-set -x
-echo "SSL cert obtained" >> /tmp/progress.log
-
-# Start unauthenticated SSL registry
+# Get a ZeroSSL cert and start the unauthenticated TLS registry, retrying the cert
+# against transient ACME failures and confirming the registry responds before continuing.
 REGISTRY_HOST="registry-${GUID}.${DOMAIN}"
-podman run -d \
-  --name registry \
-  -p 443:5000 \
-  -v /etc/letsencrypt/live/${REGISTRY_HOST}/fullchain.pem:/certs/fullchain.pem:ro \
-  -v /etc/letsencrypt/live/${REGISTRY_HOST}/privkey.pem:/certs/privkey.pem:ro \
-  -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/fullchain.pem \
-  -e REGISTRY_HTTP_TLS_KEY=/certs/privkey.pem \
-  quay.io/mmicene/registry:2
-echo "Registry started at ${REGISTRY_HOST}" >> /tmp/progress.log
+setup_ssl_registry "${REGISTRY_HOST}"
 
 # Write REGISTRY to rhel user's bashrc for persistence across terminal sessions
 touch /home/rhel/.bashrc

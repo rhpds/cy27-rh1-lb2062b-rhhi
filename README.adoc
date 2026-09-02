@@ -1,0 +1,28 @@
+= Container Image Scanning, SBOMs, and Signing
+
+This lab covers the full supply chain security workflow for container images: vulnerability
+scanning, SBOM generation, cryptographic signing, and signed SBOM attestation.
+
+== Lab Overview
+
+Participants scan hardened and UBI images for CVEs, generate machine-readable SBOMs,
+verify Red Hat's published image signatures, push their own image to a local SSL registry,
+sign it with cosign, and attach the SBOM as a signed attestation.
+
+== Modules
+
+* Module 01: Vulnerability Scanning -- scan images for CVEs with Grype
+* Module 02: SBOM Generation -- generate and inspect SBOMs with Syft
+* Module 03: Verify Published Signatures -- inspect Red Hat's signing chain with cosign
+* Module 04: Push and Generate Keys -- push to the local registry and create a key pair
+* Module 05: Sign and Verify -- cryptographic image signing with cosign
+* Module 06: SBOM Attestation -- attach and verify a signed SBOM attestation
+
+== Infrastructure
+
+Requires ZeroSSL credentials in config/secrets.yaml for the SSL-enabled local registry
+used in modules 04-06.
+
+== Duration
+
+28-36 minutes

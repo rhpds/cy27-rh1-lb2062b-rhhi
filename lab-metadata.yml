@@ -14,8 +14,10 @@ lab:
       - "CVE scanning"
       - "SBOM management"
       - "Image signing and attestations"
+      - "Supply chain custody"
+      - "Build provenance (SLSA)"
     use_case: "Get familliar with the new Red Hat Hardened Images security model"
-    time_to_complete: "25" # time in minutes
+    time_to_complete: "32" # time in minutes
     
   # Git references for deployment
   # Use automated tag tied to a release for production, main for development

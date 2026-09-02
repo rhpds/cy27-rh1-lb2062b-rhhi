@@ -49,9 +49,9 @@ skopeo list-tags docker://registry-{guid}.{domain}/rhhi-demo
 }
 ----
 When you verified the signatures of the RHHI and UBI images, the saved `.sig` files are the manifests for those specific images.
-This is where tags verus digests can be important.
-That exercise verifed by tag, which means as a tag like `latest` moves, the image SHA and signature would also be updated.
-Enforcing verification on pull would allow you to prevent the introduction of a new `latest` tagged image that did not have an appropirate signature.
+This is where tags versus digests can be important.
+That exercise verified by tag, which means as a tag like `latest` moves, the image SHA and signature would also be updated.
+Enforcing verification on pull would allow you to prevent the introduction of a new `latest` tagged image that did not have an appropriate signature.
 
 [[verify-signature]]
 == Verify the Signature
@@ -83,6 +83,43 @@ Notice that the JSON output has the same format as the public signature examined
 We verified the image by *tag* here, not SHA, and got the correct signature and SHA digest. Both identifiers are valid and have different use cases.
 ====
 
+[[resign-mirrored]]
+== Take Custody of the Mirrored Image
+
+In Module 4 you mirrored `python:3.12` into your registry and saw the trade-off: you kept the image and its verifiable digest, but Red Hat's signature stayed behind. That mirrored image is still unverifiable in your registry.
+
+The standard way to close this gap at a trust boundary is to sign the image with *your own* key.
+This is not a workaround for the missing vendor signature -- it is a deliberate assertion: *you* pulled this image, *you* vetted it, and *you* are admitting it into your environment on your own authority.
+From this point on, everything in your registry -- your application image and the vendor images you've mirrored -- gates on the same key you control.
+
+The digest you kept when you mirrored the image is exactly what you need now: cosign signs by digest, and because you preserved it, that digest *is* Red Hat's -- you are signing the vendor's genuine artifact under your own key. You recorded it in `~/python.digest` -- load it and sign by digest, exactly as you signed your own image.
+
+[source,bash,role=execute,subs=attributes+]
+----
+PYTHON_DIGEST=$(cat ~/python.digest)
+cosign sign --tlog-upload=false \
+  --yes --key cosign.key \
+  registry-{guid}.{domain}/python@${PYTHON_DIGEST}
+----
+
+Now verify the mirrored image against your public key. The verification that failed in Module 4 now succeeds.
+
+[source,bash,role=execute,subs=attributes+]
+----
+cosign verify --insecure-ignore-tlog=true \
+  --key cosign.pub \
+  registry-{guid}.{domain}/python:3.12
+----
+----
+Verification for registry-{guid}.{domain}/python:3.12 --
+The following checks were performed on each of these signatures:
+  - The cosign claims were validated
+  - The signatures were verified against the specified public key
+----
+
+The image is the same one Red Hat published; the link attesting to it is now yours.
+You have not recovered Red Hat's original signature -- you've established your own, which is what a downstream consumer of *your* registry actually needs to trust.
+
 == The Chain of Trust So Far
 
 You now have:
@@ -90,7 +127,8 @@ You now have:
 * An image in your local registry (`rhhi-demo:hardened`)
 * A cosign key pair (`cosign.key` / `cosign.pub`)
 * A valid signature stored in the registry alongside the image
-* The ability to verify that signature
+* A mirrored vendor image (`python:3.12`) signed under your own key
+* The ability to verify both signatures
 
 Anyone with the public key and registry access can verify the image is authentic and hasn't been modified since signing. 
 But what about sharing the expected contents of an image in a similarly secure manner?
