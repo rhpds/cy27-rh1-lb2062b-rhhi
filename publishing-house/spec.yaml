@@ -20,12 +20,49 @@ project:
   workflow_id: "6ce08ad3-c785-4ff4-9435-91f1edb8f10a"
 
 spec:
-  title: ""
-  learning_objectives: []
-  modules: []              # [{id, title, duration_min}] — written by intake Phase 4; id is stable (e.g. module-01)
+  title: "Container Image Scanning, SBOMs, and Signing"
+  learning_objectives:
+    - "Scan container images using Grype to identify CVE exposure and compare vulnerability counts between a Red Hat Hardened Image and a UBI10-based image"
+    - "Generate machine-readable SPDX-JSON SBOMs for container images using Syft and inspect package metadata, supplier data, and PURL references"
+    - "Verify published cryptographic image signatures using Cosign against Red Hat's official public keys and inspect the in-toto envelope structure"
+    - "Configure a per-student TLS-enabled OCI registry, push container images by immutable digest, and mirror a vendor image using Skopeo"
+    - "Sign container images by digest using Cosign and verify OCI signature artifacts as a downstream consumer would"
+    - "Attest a signed SBOM to a container image using cosign attest and verify the attestation envelope for offline inspection"
+    - "Analyze vendor-published SLSA build provenance records to trace build identity, hermetic flag, and pinned input materials"
+    - "Build a complete image supply chain trust model spanning scanning, SBOM generation, signing, and provenance attestation"
+  modules:
+    - id: module-01
+      title: "Vulnerability Scanning Container Images"
+      duration_min: 20
+      status: not_started
+    - id: module-02
+      title: "Working with SBOMs"
+      duration_min: 15
+      status: not_started
+    - id: module-03
+      title: "Verifying Published Signatures"
+      duration_min: 15
+      status: not_started
+    - id: module-04
+      title: "Image Signing Setup (Push and Generate Keys)"
+      duration_min: 20
+      status: not_started
+    - id: module-05
+      title: "Image Signing and Verification"
+      duration_min: 20
+      status: not_started
+    - id: module-06
+      title: "Image SBOM Attestation"
+      duration_min: 15
+      status: not_started
+    - id: module-07
+      title: "Establishing Supply Chain Trust"
+      duration_min: 15
+      status: not_started
+  # [{id, title, duration_min}] — written by intake Phase 4; id is stable (e.g. module-01)
   environment:
-    platform: ""               # ocp | rhel-vms — determines which sizing fields apply
-    topology: ""               # shared-cluster | per-student | cnv-pool
+    platform: "rhel-vms"       # ocp | rhel-vms — determines which sizing fields apply
+    topology: "per-student"    # shared-cluster | per-student | cnv-pool
     cloud_provider: cnv        # cnv | aws — cnv is default
     max_concurrent_users: null # required if topology = shared-cluster
 
@@ -55,8 +92,8 @@ spec:
     external_services: []              # named external service dependencies e.g. [github.com]
     gpu_nodes: 0                       # number of GPU nodes (0 = none)
     gpu_type: ""                       # e.g. NVIDIA A100 40GB (required if gpu_nodes > 0)
-  duration_hours: null
-  audience: ""               # beginner | intermediate | advanced
+  duration_hours: 2
+  audience: "intermediate"   # beginner | intermediate | advanced
 
 development:
   automation:
@@ -79,11 +116,25 @@ tracking:
 approval_checklist:
 
   content:
-    prerequisites_verifiable: null
+    prerequisites_verifiable: false
     assessment_strategy: ""
     catalog_gap: ""
-    design_overview: ""
-    module_summaries: []
+    design_overview: "A hands-on, Zero-Touch lab in which participants implement a full container image supply chain on a RHEL VM using Grype, Syft, Cosign, and Skopeo. The seven modules progress from CVE scanning and SBOM generation through image signing, OCI attestation, and inspection of Red Hat's own SLSA build provenance — building cumulative artifacts that form a complete per-student trust chain."
+    module_summaries:
+      - title: "Vulnerability Scanning Container Images"
+        overview: "Learners enable the rootless Podman socket and use Grype to scan a pre-built Red Hat Hardened Image versus an equivalent UBI10-based image, demonstrating zero CVEs versus 252 for the UBI image and establishing the motivation for minimal base images."
+      - title: "Working with SBOMs"
+        overview: "Learners use Syft to generate a human-readable package table and a machine-readable SPDX-JSON SBOM for the hardened image, then inspect it with jq; the SBOM file is carried forward as a signed attestation in module-06."
+      - title: "Verifying Published Signatures"
+        overview: "Learners verify cryptographic signatures on Red Hat's published hardened and UBI images using Cosign against a remote public key URL and the local RHEL signing key, and inspect the in-toto envelope structure."
+      - title: "Image Signing Setup (Push and Generate Keys)"
+        overview: "Learners push their application image to a per-student TLS registry by digest, generate a Cosign key pair, and mirror a vendor image with Skopeo — observing an intentional failure that sets up the proof-of-origin gap closed in module-05."
+      - title: "Image Signing and Verification"
+        overview: "Learners sign their pushed image by digest using Cosign, verify the signature as a downstream consumer would, and close the mirror gap from module-04 by signing the vendor image under their own key pair."
+      - title: "Image SBOM Attestation"
+        overview: "Learners attach the SPDX SBOM from module-02 to their signed image as an OCI attestation using cosign attest, then verify and download the attestation envelope — completing the per-student trust chain."
+      - title: "Establishing Supply Chain Trust"
+        overview: "Learners download Red Hat's published attestation bundle for hi/python:3.12, discover it contains both an SPDX SBOM and a SLSA v0.2 build provenance record, and inspect the Tekton Chains builder identity, hermetic flag, and pinned input materials."
     rcars_overlap_pct: null
     rcars_top_matches: []
     rejections: []

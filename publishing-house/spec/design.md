@@ -1,89 +1,98 @@
-# [Project Title]
-
-<!-- This file is the design document for your lab or demo. -->
-<!-- Fill in each section below, or run /rhdp-publishing-house to have the intake skill help. -->
-<!-- Sections marked with [brackets] are placeholders — replace with real content. -->
-<!-- The validation gate checks for all required sections before submission. -->
+# Container Image Scanning, SBOMs, and Signing
 
 ## Overview
 
-[2-3 sentences on what this lab or demo is and why it exists. Then a direct description of what participants will do — specific enough that someone reading this section immediately understands the content without interpretation. No flowery language. Example: "Participants will deploy a 3-tier application on OpenShift, configure autoscaling, and troubleshoot a simulated pod failure."]
+This lab teaches DevSecOps practitioners how to implement a complete container image supply chain using open-source tooling on Red Hat Enterprise Linux. Participants work with a pre-built Flask application based on Red Hat Hardened Images (hi/python:3.12) and an equivalent UBI10 image, progressing through seven hands-on modules that cover vulnerability scanning, SBOM generation, image signing, and supply chain provenance inspection. By the end, participants have scanned images with Grype, generated and attached SPDX SBOMs with Syft, signed and verified images with Cosign, and inspected Red Hat's own SLSA build provenance — establishing a full trust chain from scan to attestation.
 
 ## Target Audience
 
-- **Role:** [Data scientists, platform engineers, developers, etc.]
-- **Experience level:** [Beginner, intermediate, or advanced]
-- **What they already know:** [Existing skills and knowledge]
-- **What they don't know:** [Skills this lab teaches]
+- **Role:** DevSecOps practitioners, security-conscious developers, platform engineers
+- **Experience level:** Intermediate
+- **What they already know:** Basic Linux CLI, container concepts (image, registry, tag, digest), basic public/private key cryptography
+- **What they don't know:** Vulnerability scanning workflows, SBOM generation and formats (SPDX, CycloneDX), image signing with Cosign/Sigstore, SLSA provenance, OCI attestation artifacts
 
 ## Prerequisites
 
-- [What the learner must know or have completed before starting]
-- [Can the lab validate these automatically? Yes/No — brief explanation]
-
-<!-- If no prerequisites, write "None" -->
+- Basic Linux command-line proficiency (navigating the shell, running commands, reading output)
+- Familiarity with container concepts: image, registry, tag, and digest
+- Basic understanding of public/private key cryptography (key pairs, signing, verification)
+- No OpenShift or Kubernetes knowledge required
+- Prerequisites cannot be validated automatically; they are assumed from the audience profile
 
 ## Learning Objectives
 
-1. [Action verb] [specific, measurable outcome]
-2. [Action verb] [specific, measurable outcome]
-3. [Action verb] [specific, measurable outcome]
-
-<!-- Scale to duration: up to 3 objectives per 45 min of content. Start with action verbs: Configure, Deploy, Create, Implement, Troubleshoot, Monitor, Scale. Each should be testable. NOT: Understand, Learn, Know. -->
+1. Scan container images using Grype to identify CVE exposure and compare vulnerability counts between a Red Hat Hardened Image and a UBI10-based image
+2. Generate machine-readable SPDX-JSON SBOMs for container images using Syft and inspect package metadata, supplier data, and PURL references
+3. Verify published cryptographic image signatures using Cosign against Red Hat's official public keys and inspect the in-toto envelope structure
+4. Configure a per-student TLS-enabled OCI registry, push container images by immutable digest, and mirror a vendor image using Skopeo
+5. Sign container images by digest using Cosign and verify OCI signature artifacts as a downstream consumer would
+6. Attest a signed SBOM to a container image using cosign attest and verify the attestation envelope for offline inspection
+7. Analyze vendor-published SLSA build provenance records to trace build identity, hermetic flag, and pinned input materials
+8. Build a complete image supply chain trust model spanning scanning, SBOM generation, signing, and provenance attestation
 
 ## Content Type
 
-[Lab (hands-on) or Demo (presenter-led)]
+Lab (hands-on)
 
 ## Products & Technologies
 
-- [Official Red Hat product name with version if relevant]
-- [Additional products/technologies]
-
-<!-- Use official names: "Red Hat OpenShift", not "OpenShift". List upstream projects separately. -->
+- Red Hat Enterprise Linux (RHEL 9/10)
+- Red Hat Hardened Images (hi/python:3.12)
+- Red Hat Universal Base Image 10 (UBI10)
+- Podman (rootless, systemd user socket)
+- Grype (Anchore OSS — vulnerability scanner)
+- Syft (Anchore OSS — SBOM generator)
+- Cosign / Sigstore (signing, verification, attestation)
+- Skopeo (OCI image copy and inspect)
+- SPDX (ISO/IEC 5962:2021 — SBOM standard)
+- CycloneDX (OWASP — SBOM standard, reference)
+- SLSA v0.2 (Supply-chain Levels for Software Artifacts)
+- Tekton Chains (Red Hat build provenance backend)
+- jq (JSON query tool)
 
 ## Module Map
 
 | Module | Title | Duration |
 |--------|-------|----------|
-| 1 | [Module title] | [XX min] |
-| 2 | [Module title] | [XX min] |
-| — | **Total hands-on** | **[X hours]** |
-| — | Intro / presentation | [~XX min] |
-| — | **Total lab** | **[~X hours]** |
-
-<!-- Each module 10-30 min. Total: lab 1-4 hours, demo 15-45 min. Modules should build on each other. -->
+| 1 | Vulnerability Scanning Container Images | 20 min |
+| 2 | Working with SBOMs | 15 min |
+| 3 | Verifying Published Signatures | 15 min |
+| 4 | Image Signing Setup (Push and Generate Keys) | 20 min |
+| 5 | Image Signing and Verification | 20 min |
+| 6 | Image SBOM Attestation | 15 min |
+| 7 | Establishing Supply Chain Trust | 15 min |
+| — | **Total hands-on** | **120 min** |
+| — | Intro / orientation | ~0 min (ZT — no presenter) |
+| — | **Total lab** | **~2 hours** |
 
 ## Difficulty Level
 
-[Beginner, Intermediate, or Advanced]
+Intermediate
 
 ## Environment
 
-**Learner view:** [What exists when the lab starts — pre-deployed resources, what participants see and interact with. Be specific about cluster details.]
+**Learner view:** A single RHEL VM is pre-provisioned per student. The VM has rootless Podman configured with a systemd user socket. Two pre-built container images are loaded into the local container storage before the lab starts: `rhhi-demo:hardened` (based on hi/python:3.12, running a Flask app) and `rhhi-demo:ubi` (equivalent app on UBI10). A per-student local OCI registry with TLS is reachable at `registry-{guid}.{domain}`. Grype, Syft, Cosign, Skopeo, and jq are pre-installed. External access to `registry.access.redhat.com` and `security.access.redhat.com` is required for signature verification steps.
 
-**Automation needed:** [Yes/No]
-
-[If yes, list what automation must provision — operators, per-user resources, sample apps, data sets.]
+**Automation needed:** Yes — setup automation must pre-load container images, configure the rootless Podman socket, and provision the per-student TLS registry before the lab begins.
 
 ## Infrastructure Requirements
 
-- **Cloud provider:** [CNV (default), AWS, or Troshka (bare-metal/nested virt)]
-- **Cluster type:** [Multinode or SNO (Single Node OpenShift)]
-- **OCP version:** [e.g. 4.20 — minimum 4.20]
-- **Topology:** [Shared cluster, per-student, or CNV pool]
-- **Sizing:** [Node types and counts with resources — e.g., "3 control plane (16 CPU, 64GB RAM), 6 workers (8 CPU, 32GB RAM, 100GB disk)"]
-- **Automation approach:** [Ansible, GitOps (Helm + ArgoCD), or combo]
-- **AI/MaaS:** [None, MaaS (open-source model), MaaS (frontier model), or dedicated GPU — include justification if not "none"]
-- **External services:** [Named services — e.g., github.com, registry.access.redhat.com — or "None"]
-- **AAP version:** [e.g. 2.5 — only if AAP is in products; omit otherwise]
-- **Non-GA products:** [Product name + version, with access plan — or "None (all products are GA)"]
-
-<!-- Not all fields must be known at intake. "TBD, estimating ~X" is fine. -->
+- **Cloud provider:** TBD — confirmed in infrastructure phase
+- **Cluster type:** TBD — confirmed in infrastructure phase
+- **OCP version:** TBD — confirmed in infrastructure phase
+- **Topology:** TBD — confirmed in infrastructure phase
+- **Sizing:** TBD — confirmed in infrastructure phase
+- **Automation approach:** TBD — confirmed in infrastructure phase
+- **AI/MaaS:** TBD — confirmed in infrastructure phase
+- **External services:** TBD — confirmed in infrastructure phase
+- **AAP version:** TBD — confirmed in infrastructure phase
+- **Non-GA products:** TBD — confirmed in infrastructure phase
 
 ## Assessment Strategy (Optional)
 
-<!-- Optional — skip this section for demos or classic labs without verification. -->
-<!-- Relevant for Zero-Touch labs with solve/validate buttons or labs with automated checks. -->
+This is a Zero-Touch lab. Each module has a solve/validate button pair:
 
-[If applicable: how will we know the learner successfully completed each module? Per module: verification script, solve/validate button, visible result in the UI, or automated check.]
+- **Solve:** Runs the authoritative command sequence for the module so a stuck learner can unblock and continue.
+- **Validate:** Runs a verification script that checks for expected artifacts (e.g., presence of `~/rhhi-demo.spdx`, a valid cosign signature tag on the registry image, a matching attestation envelope) and returns pass/fail with a brief explanation.
+
+Module-07 has no solve button — the final provenance inspection is read-only and has no persistent artifact to validate.
