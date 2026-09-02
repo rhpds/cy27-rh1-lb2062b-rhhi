@@ -77,16 +77,15 @@ Intermediate
 
 ## Infrastructure Requirements
 
-- **Cloud provider:** TBD — confirmed in infrastructure phase
-- **Cluster type:** TBD — confirmed in infrastructure phase
-- **OCP version:** TBD — confirmed in infrastructure phase
-- **Topology:** TBD — confirmed in infrastructure phase
-- **Sizing:** TBD — confirmed in infrastructure phase
-- **Automation approach:** TBD — confirmed in infrastructure phase
-- **AI/MaaS:** TBD — confirmed in infrastructure phase
-- **External services:** TBD — confirmed in infrastructure phase
-- **AAP version:** TBD — confirmed in infrastructure phase
-- **Non-GA products:** TBD — confirmed in infrastructure phase
+- **Cloud provider:** CNV
+- **Platform:** RHEL VMs (no OpenShift cluster required)
+- **Topology:** Per-student
+- **Sizing:** 1 RHEL 10 VM per student — 1 vCPU, 4GB RAM, 40GB disk
+- **Automation approach:** Ansible (pre-installs tooling, pre-loads container images, provisions per-student TLS registry)
+- **AI/MaaS:** None
+- **External services:** `registry.access.redhat.com`, `security.access.redhat.com` (egress TCP 80 + 443 required)
+- **AAP version:** N/A
+- **Non-GA products:** None — all tools are upstream OSS; Red Hat Hardened Images and UBI10 are GA
 
 ## Assessment Strategy (Optional)
 
