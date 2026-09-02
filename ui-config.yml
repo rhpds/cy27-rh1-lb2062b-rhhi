@@ -29,4 +29,5 @@ antora:
 tabs:
   - name: ">_ terminal"
     path: /wetty
+    port: 443
 
