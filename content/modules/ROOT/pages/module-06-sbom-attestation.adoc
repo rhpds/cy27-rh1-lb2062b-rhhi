@@ -29,7 +29,7 @@ SLSA provenance for build environment information is another type of attestation
 
 [NOTE]
 ====
-In Module 2, you generated the SBOM at `~/rhhi-demo.spdx` using `syft`. Attaching it here as a signed attestation ties it cryptographically to the specific image digest you pushed in Module 4.
+In an earlier exercise, you generated the SBOM at `~/rhhi-demo.spdx` using `syft`. Attaching it here as a signed attestation ties it cryptographically to the specific image digest you pushed in an earlier exercise.
 ====
 
 Attach the SBOM using `cosign attest`, once again using the SHA digest. 
@@ -118,7 +118,7 @@ You've established a complete chain of trust for your own container image:
 * *SBOM Attestation*: Proves the SBOM belongs to this specific image digest
 * *Verification*: Anyone with the public key can verify the image and its SBOM
 
-Every link you've added -- signature and attestation -- is one Red Hat also produces for the images you inherited. In the next module you'll look at the link that sits *before* yours: the build provenance the source attaches to prove where its images came from.
+Every link you've added -- signature and attestation -- is one Red Hat also produces for the images you inherited. In the next exercise you'll look at the link that sits *before* yours: the build provenance the source attaches to prove where its images came from.
 
 .*Production Best Practices*
 

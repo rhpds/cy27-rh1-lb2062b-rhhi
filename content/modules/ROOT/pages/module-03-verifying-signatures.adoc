@@ -7,7 +7,6 @@
 
 * Understand how cosign verifies container image signatures
 * Verify a Red Hat Hardened Image signature using a public key URL
-* Verify a UBI image signature using the local signing key shipped with RHEL
 * Save verification output for later reference
 --
 
@@ -15,10 +14,10 @@
 == Introduction
 
 You've started with a minimized base and inventoried the contents of your application.
-Red Hat is the trusted source for these images -- the question is not whether to trust that source, but how to confirm the artifact actually in your hands is the genuine one it published, unchanged in transit.
-That confirmation is what keeps the chain from the source to you intact, and the answer is cryptographic signing.
+One way to confirm that the image is unchanged from the one published by the vendor is by examine the signature.
+That confirmation is what keeps the chain from the source to you intact, and cryptographic signing provide the means.
 
-In this module, you'll use `cosign` to verify the signatures that Red Hat publishes on its hardened images — including `hi/python:3.12`, the base your lab image is built on.
+You'll use `cosign` to verify the signatures that Red Hat publishes on its hardened images including the base your lab image is built on.
 
 === About Cosign and the Transparency Log
 
@@ -45,12 +44,10 @@ Red Hat signs all hardened images with **Red Hat release key v3** — the same k
 The public key is available at a stable URL published on the Red Hat security portal.
 
 Let's verify `hi/python:3.12`, the base image your `rhhi-demo:hardened` application is built on.
-The output is saved to `~/hi-python.sig` for later reference.
 
 [source,bash,role=execute,subs=attributes+]
 ----
 cosign verify --insecure-ignore-tlog \
-  --output-file ~/hi-python.sig \
   --key https://security.access.redhat.com/data/63405576.txt \
   {rhhi-registry}/python:3.12
 ----
@@ -67,6 +64,14 @@ This confirms that `hi/python:3.12` is exactly the hardened image Red Hat publis
 Verification checks the provided key against the signature attached to the image in the registry.
 Signatures can then be used to gate the introduction of a new image to a pipeline or a local registry for distribution, even before pulling an image.
 
+[NOTE]
+====
+Digests and cryptographic signatures aren't human-readable in any useful sense — there's no way to look at a SHA256 hash or a signature payload and confirm it's correct by eye.
+Verification is tool-mediated: cosign does the cryptographic comparison and reports pass or fail.
+What you verify as a human is the chain of inputs: the key came from a known, trusted source; the image reference is what you expect; and you're using a tool you trust to make the comparison correctly.
+The output tells you whether those inputs produced a match — that's the whole check.
+====
+
 [[verify-ubi]]
 == Verify the UBI Image Signature
 
@@ -78,7 +83,6 @@ Let's verify the UBI image using the local copy of the key shipped via RPM.
 [source,bash,role=execute,subs=attributes+]
 ----
 cosign verify --insecure-ignore-tlog \
-  --output-file ~/ubi-latest.sig \
   --key /etc/pki/sigstore/SIGSTORE-redhat-release3 \
   registry.access.redhat.com/ubi10/ubi:latest
 ----
@@ -87,39 +91,6 @@ Both approaches use the same underlying key.
 The URL method works anywhere with HTTPS egress. 
 The local key file works in air-gapped environments where RHEL is installed.
 
-Feel free to examine the `.sig` files to see the JSON arrays that cosign produces.
-
-[source,bash,role=execute]
-----
-jq -r '.[0]' ~/hi-python.sig
-----
-
-[source,json]
-----
-{
-  "critical": {
-    "identity": {
-      "docker-reference": "registry.redhat.io/hi/python:1780665528"
-    },
-    "image": {
-      "docker-manifest-digest": "sha256:3806e81dccd1c4edea3e1123d83ddfce59e81417cacd1d4289891c46f68e2986"
-    },
-    "type": "cosign container image signature"
-  },
-  "optional": {
-    "Bundle": {
-      "SignedEntryTimestamp": "MGUCMQCApb6idfNGwDtnIQXGqBkIOB9oWrLoUFQ0waXq+OQQjCAqSHSuTYWMprhd/ECbcl4CMB/I0EmxNGQTrzJKH9RVQdVbzE6YZ0NhICplPlvV9HvlEUmoAer15m2LPU/8L0ShIw==",
-      "Payload": {
-        "body": "eyJhcGlWZXJzaW9uIjoiMC4wLjEiLCJraW5kIjoiaGFzaGVkcmVrb3JkIiwic3BlYyI6eyJkYXRhIjp7Imhhc2giOnsiYWxnb3JpdGhtIjoic2hhMjU2IiwidmFsdWUiOiI1MDBlMjMwN2RhMjY5ZmY3YjkwOWIwZTMxM2YxZTI4MzY5NTM4ZDhiYTMzMDU2NGU1ZmM1ZjBhNGE3NDFiNmYzIn19LCJzaWduYXR1cmUiOnsiY29udGVudCI6ImJ3QmZBTUdOSVBsYkFiRUlQWGNVZHJPQUVjZHdSU0JoQXp6RHQ3UDUwa2ZHSlp2aXdKbGtNUWd0U0hCR1ZINDFSckMyL1ZwMk5URzdIQnRybmRPUm5lTmZzMFB1WTNZZTI0ckR3bVVFa2o1WVg5Y2RkZkMvZytmZGNwSURSY2RpWlZPbkhuU3dZengyRFVrNE1FaFNrVERFZjRrYzh4ZkgvZDIxa3ZlREJaS3orRFFSZ2I3cHNibmt4eVBMUXRhQWNseEttR2xoLzlSZUhUOFVkTTYzM3NTUU82VDJPdGFRTFlvM3phRFJEMW02OVNPWWtLOE4vYS9pczkzMUxUakpJNm1Wbkg3cTB6QTJ5NzVrbkE2VXpaUkU1Zjl3bVJyS3N6Qy85RnBUY3YwYllHZHB2aFdXQ2J0OGtoUGtsd0NFWFhOM2pwSkxST3MxT3diejlFY2drWk1VQ2o0QUU5bXh2dnFiWlpReWhNU1p5Mnlkck1mazBYRFNDbTBrSlVnOFhoQVdtaEZOUUZydDVITnBWUVRpNEwvaFBsRGc2M0M0clNwSkZmOGNFZEFzQitMdjRiTEVyUzdUdms3UkdVdFhuZ3ExU084b25xL1ZkaE1VMWJwTlA1RGVvVTErQ3JkcTVBV1NJSjBWOGxySDc3VktxWjFGa2pwQVRwZ2RJODNPbmdndksrdnhMeXlUclNTcE1RMVhWMFZZc25kbU94VzVJNlM4YURMb3pMa1RYK1ZEdEhndVBlZ1pWRENvb095bDJMSElwZmdpRjJraTJ6aWtrUTFEbzZZQWsxUmhJdnlTbW93T0VJTGdFVzZ5dEwrZzNTbXBwcUlucHUwek5GWEJCMVJqV0FxeDRMOFpYRHF4Y2FkM2hIM2ZnMFhEaHZRK0pFbkh6ZjFVdjB3PSIsInB1YmxpY0tleSI6eyJjb250ZW50IjoiTFMwdExTMUNSVWRKVGlCUVZVSk1TVU1nUzBWWkxTMHRMUzBLVFVsSlEwbHFRVTVDWjJ0eGFHdHBSemwzTUVKQlVVVkdRVUZQUTBGbk9FRk5TVWxEUTJkTFEwRm5SVUV3UVZONWRVZ3lWRXhYZGtKVmNWQklXalJKY0FvM05XYzNSVzVqUW10blVVaGtTbTVxZW5oQlZ6VkxVVlJOYUM5emFVSnZRaTlDYjFOeWRHbFFUWGR1UTJoaVZFTnVVVTlKVVdWYWRVUnBSbTVvZFVvM0NrMHZSRE5pTjBwdldEQnRNVEl6VG1ORFUyNDJOMjFCWkdwQ1lUWkNaelpyZFd0YVowTlFORnBWV21WRlUyRnFWMWd2UldwNWJFWmpVa1pQV0ZjMU4zQUtVa1JEUlU0ME1rb3ZhbGxzVm5GMEsyYzVLMGR5YTJWeU9GTjZPRFpJTTJ3d2RHSnhUMlJxWW5vdlZuaElXV2gzUmpCamRGVk5TSE41VmxKRWNUSlJVQXAwY1hwT1dHeHRiRTFvVXk5UWIwWnlObEkwZFM4M1NFTnVMMHNyVEdWblkwOHlaa0ZHVDJJME1FdDJTMU5MUzFaRU5teGxkMVZhUlhKb2IzQXhRMmRLQ2xocVJIUkhiVzFQT1dSSFRVWTNNVzFtTmtoRlptRkxVMlI1SzBWRk5tbFRSakpCTWxaMk9WRm9RbUYzVFdseE1tdFBla1ZwVEdjMGJrRmtTbFE0ZDJjS1duSk5RVzFRUTNGSFNYTllUa2RhTkM5UksxbFVkM2RzWTJVeloyeHhZalZNT1hSbVRtOTZSV1JUVWpsT09EVkVSVk5tVVV4UlJXUlpNME5oYkhkTFRRcENWREZQUldoRldERjNTRkpEVlRSa2NrMVBaV28yUWs1WE1GWjBjMk5IZEVodFEzSnpOelJxVUdWNmFIZE9WRGg1Y0d0NVV5dFVNSHBVTkZSemVUWm1DbFpZYTBvNFdWTkllV1Z1VTNwTlFqSlBjREppZG5ORk0yZHlXU3R6TnpSWGFFYzVWVWxCTmtSQ2VHTlVhV1V4TlU1VGVrdDNabnBoYjA1WFQwUmpURVlLY0RkQ1dUaGhZVWhGTWsxeFJuaFpSbGdyU1dKcWNHdFJVbVpoWlZGUmMyOTFSRVprUTJ0WVJVWldabEJ3WWtReVpHczJSbXhsWVUxVVVIVjVlSFJKVkFwbmFsWkZkRWRSU3pKeFIwTkdSMmxSU0Vaa05HaG1WaXRsUTBFMk0wcHliekY2TUhwdlFrMDFRbUpKU1ZFeksyVldSbmQwTTBGc1duQTFWVlozY2paa0NuTmxZM0ZyYVM5NWNtMTJNMWt3WkhGYU9WWlBiak5WUTBGM1JVRkJVVDA5Q2kwdExTMHRSVTVFSUZCVlFreEpReUJMUlZrdExTMHRMUW89In19fX0=",
-        "integratedTime": 1780667688,
-        "logIndex": 8852672,
-        "logID": "ca942090268a346a8664aa2963df280e7e01d7e3229aa8d523c8eeebb47a0e3b"
-      }
-    }
-  }
-}
-----
-The signature is the Base64 encoded `body`.
 
 == Summary
 
@@ -127,5 +98,5 @@ You've verified that Red Hat's published images carry valid, cryptographically v
 The same key that protects `hi/python:3.12` — your app's base — also protects every other Red Hat image.
 
 So far you've been on the receiving end of that chain, confirming artifacts a trusted source published.
-In the next modules you start taking control of these images yourself: bringing your application image into your own registry and putting your own signature on it.
+In the next exercises you start taking control of these images yourself: bringing your application image into your own registry and putting your own signature on it.
 That is where maintaining the chain gets more interesting -- and where you'll see what happens to those inherited signatures once an image moves.

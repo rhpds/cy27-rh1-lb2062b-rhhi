@@ -15,12 +15,11 @@
 
 [NOTE]
 ====
-The `--tlog-upload=false` flag skips uploading to the Rekor public transparency log -- as covered in Module 3, we skip this in lab environments to avoid adding noise to the public Sigstore instance.
+The `--tlog-upload=false` flag skips uploading to the Rekor public transparency log -- as covered in the previous exercise, we skip this in lab environments to avoid adding noise to the public Sigstore instance.
 ====
 
-The cosign signature references the immutable digest rather than the mutable tag. 
-We'll use the environment variable we created to add to the OCI name for our application image.
-This means you are certifying that the image you pushed, identified by that specific SHA, is in fact the application image you created.
+Cosign signs by digest, not tag — a tag can be reassigned, a digest cannot.
+The `@${IMAGE_DIGEST}` syntax addresses the image by the specific digest the registry computed when you pushed it.
 [source,bash,role=execute,subs=attributes+]
 ----
 cosign sign --tlog-upload=false \
@@ -48,17 +47,11 @@ skopeo list-tags docker://registry-{guid}.{domain}/rhhi-demo
     ]
 }
 ----
-When you verified the signatures of the RHHI and UBI images, the saved `.sig` files are the manifests for those specific images.
-This is where tags versus digests can be important.
-That exercise verified by tag, which means as a tag like `latest` moves, the image SHA and signature would also be updated.
-Enforcing verification on pull would allow you to prevent the introduction of a new `latest` tagged image that did not have an appropriate signature.
-
 [[verify-signature]]
 == Verify the Signature
 
-Just as you verified Red Hat's signatures in Module 3, you can now verify your own. 
-This is the same workflow a consumer of your image would run to confirm the image is authentic. 
-If you were using keyless signatures, the certificate chain of trust is what someone would need to verify the signature instead of the public key used here.
+Just as you verified Red Hat's signatures in the previous exercise, you can now verify your own.
+This is the same workflow a consumer of your image would run to confirm the image is authentic.
 
 [source,bash,role=execute,subs=attributes+]
 ----
@@ -80,19 +73,21 @@ Notice that the JSON output has the same format as the public signature examined
 
 [NOTE]
 ====
-We verified the image by *tag* here, not SHA, and got the correct signature and SHA digest. Both identifiers are valid and have different use cases.
+The sign command used a digest reference (`@${IMAGE_DIGEST}`); the verify command here uses a tag.
+Both work because cosign resolves the tag to its current digest and looks for a signature attached to that digest.
+A downstream consumer verifying by tag gets the same result as verifying by digest — as long as the tag hasn't been reassigned to a different image since it was signed.
 ====
 
 [[resign-mirrored]]
-== Take Custody of the Mirrored Image
+== Re-sign the Mirrored Image
 
-In Module 4 you mirrored `python:3.12` into your registry and saw the trade-off: you kept the image and its verifiable digest, but Red Hat's signature stayed behind. That mirrored image is still unverifiable in your registry.
+In the previous exercise you mirrored `python:3.12` with its digest preserved and deliberately left Red Hat's signatures behind.
+Re-signing with your own key is the second half of that pattern — your signature on the preserved digest is what makes the image verifiable inside your registry.
 
-The standard way to close this gap at a trust boundary is to sign the image with *your own* key.
-This is not a workaround for the missing vendor signature -- it is a deliberate assertion: *you* pulled this image, *you* vetted it, and *you* are admitting it into your environment on your own authority.
-From this point on, everything in your registry -- your application image and the vendor images you've mirrored -- gates on the same key you control.
+This is a deliberate assertion: you pulled this image, you verified it in the previous exercise, and you are admitting it into your environment on your own authority.
+From this point on, everything in your registry — your application image and the vendor base you mirrored — gates on the same key.
 
-The digest you kept when you mirrored the image is exactly what you need now: cosign signs by digest, and because you preserved it, that digest *is* Red Hat's -- you are signing the vendor's genuine artifact under your own key. You recorded it in `~/python.digest` -- load it and sign by digest, exactly as you signed your own image.
+Because you used `--preserve-digests`, the digest in `~/python.digest` is Red Hat's original — you are signing the genuine artifact under your own key.
 
 [source,bash,role=execute,subs=attributes+]
 ----
@@ -102,7 +97,7 @@ cosign sign --tlog-upload=false \
   registry-{guid}.{domain}/python@${PYTHON_DIGEST}
 ----
 
-Now verify the mirrored image against your public key. The verification that failed in Module 4 now succeeds.
+Now verify the mirrored image against your public key. The verification that failed in the previous exercise now succeeds.
 
 [source,bash,role=execute,subs=attributes+]
 ----
@@ -120,17 +115,8 @@ The following checks were performed on each of these signatures:
 The image is the same one Red Hat published; the link attesting to it is now yours.
 You have not recovered Red Hat's original signature -- you've established your own, which is what a downstream consumer of *your* registry actually needs to trust.
 
-== The Chain of Trust So Far
+== Summary
 
-You now have:
-
-* An image in your local registry (`rhhi-demo:hardened`)
-* A cosign key pair (`cosign.key` / `cosign.pub`)
-* A valid signature stored in the registry alongside the image
-* A mirrored vendor image (`python:3.12`) signed under your own key
-* The ability to verify both signatures
-
-Anyone with the public key and registry access can verify the image is authentic and hasn't been modified since signing. 
-But what about sharing the expected contents of an image in a similarly secure manner?
-
-In the next module, you'll attach the SBOM you generated in Module 2 as a signed attestation, adding another layer of verifiable provenance.
+Both images in your registry now carry a signature under a key you control.
+A signature proves the image hasn't been tampered with since it was signed — but it says nothing about what's inside it.
+In the next exercise you'll attach the SBOM you generated in an earlier exercise as a signed attestation, binding the package inventory to the same key so consumers can verify both the image and its contents.

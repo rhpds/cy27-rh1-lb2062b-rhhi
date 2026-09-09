@@ -17,13 +17,13 @@
 Across this lab you've built your own links in a chain: you scanned a baseline, inventoried it with an SBOM, verified signatures, signed your image, and attached a signed SBOM attestation.
 Every one of those links is something Red Hat also produces for the images you inherited.
 
-This module looks at the link that sits *before* yours -- the build provenance the source attaches to prove not just *that* an image is authentic, but *how and where* it was built.
+This exercise looks at the link that sits *before* yours -- the build provenance the source attaches to prove not just *that* an image is authentic, but *how and where* it was built.
 The framework for that is *SLSA* (Supply-chain Levels for Software Artifacts), which formalizes build-integrity metadata as a signed attestation traveling with the image.
 
 [[download-vendor-attestation]]
 == Download the Vendor's Attestations
 
-In Module 6 you attached and downloaded an attestation for your own image. Red Hat publishes attestations for its images the same way, and you can download them with the same command.
+In the previous exercise you attached and downloaded an attestation for your own image. Red Hat publishes attestations for its images the same way, and you can download them with the same command.
 
 [source,bash,role=execute,subs=attributes+]
 ----
@@ -53,7 +53,7 @@ https://spdx.dev/Document
 https://slsa.dev/provenance/v0.2
 ....
 
-The first is an SBOM, the same kind of package inventory you worked with in Module 2.
+The first is an SBOM, the same kind of package inventory you worked with in an earlier exercise.
 The second is the *SLSA build provenance* -- the record of how the image was produced. That's the one we'll examine.
 
 [[isolate-slsa]]
@@ -147,7 +147,7 @@ That is the difference between provenance you can read and provenance you can *v
 == Provenance and the Mirror Gap
 
 This provenance is attached to the vendor image the same way the signature was -- as a separate artifact beside the image in the registry.
-When you mirrored `python:3.12` into your own registry in Module 4, this provenance, like the signature, stayed behind.
+When you mirrored `python:3.12` into your own registry in an earlier exercise, this provenance, like the signature, stayed behind.
 
 [NOTE]
 ====
@@ -159,10 +159,10 @@ With other tools it is possible to carry this attestation along with the mirrore
 
 You've now seen every kind of link in the chain, from both sides.
 
-* *Scanning* (Module 1) -- the source publishes a CVE feed so you can measure the noise in a baseline before you build on it.
-* *SBOM* (Modules 2, 6) -- the source publishes package inventories; you generate and attest your own.
-* *Signatures* (Modules 3, 5) -- the source signs what it publishes; you sign what you ship and re-sign what you mirror.
-* *Build provenance* (this module) -- the source attaches SLSA provenance describing how its images were built, with enough pinned detail to reproduce the build and confirm the result yourself.
+* *Scanning* — the source publishes a CVE feed so you can measure the noise in a baseline before you build on it.
+* *SBOM* — the source publishes package inventories; you generate and attest your own.
+* *Signatures* — the source signs what it publishes; you sign what you ship and re-sign what you mirror.
+* *Build provenance* — the source attaches SLSA provenance describing how its images were built, with enough pinned detail to reproduce the build and confirm the result yourself.
 
 Supply-chain security isn't any single one of these tools. It's an unbroken, inspectable chain from a trusted source, through your build, to whoever consumes what you ship -- where every link can be examined and every handoff keeps the chain intact.
 
