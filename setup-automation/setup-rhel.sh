@@ -102,11 +102,17 @@ git -C $TMPDIR checkout
 SETUP_FILES=$TMPDIR/content/modules/ROOT/examples/flask
 
 # Install grype
-GRYPE_VERSION=v0.111.0
+GRYPE_VERSION=v0.118.0
 curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | \
   sh -s -- -b /usr/local/bin ${GRYPE_VERSION}
 runuser -l rhel -c "grype db update"
 echo "Grype installed" >> /tmp/progress.log
+
+# Install syft
+SYFT_VERSION=v1.51.1
+curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | \
+  sh -s -- -b /usr/local/bin ${SYFT_VERSION}
+echo "Syft installed" >> /tmp/progress.log
 
 # Install cosign
 COSIGN_VERSION=v2.6.3
@@ -114,12 +120,6 @@ curl -LO https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/
 install -m 755 cosign-linux-amd64 /usr/local/bin/cosign
 rm cosign-linux-amd64
 echo "Cosign installed" >> /tmp/progress.log
-
-# Install syft
-SYFT_VERSION=v1.42.4
-curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | \
-  sh -s -- -b /usr/local/bin ${SYFT_VERSION}
-echo "Syft installed" >> /tmp/progress.log
 
 # Get a ZeroSSL cert and start the unauthenticated TLS registry, retrying the cert
 # against transient ACME failures and confirming the registry responds before continuing.

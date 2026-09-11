@@ -64,7 +64,7 @@ The build provenance is what we'll inspect in this exercise.
 [[isolate-slsa]]
 == Isolate the SLSA Provenance
 
-We can extract the SLSA porttion from the complete JSON payload using standard tools like `jq`.
+We can extract the SLSA portion from the complete JSON payload using standard tools like `jq`.
 
 [source,bash,role=execute]
 ----
@@ -141,7 +141,7 @@ jq '.predicate.materials[] | select(.uri | startswith("git+"))' ~/python-slsa.js
 ----
 
 That commit contains the Containerfile and the dependency specifications -- lockfiles, requirements files, or equivalent -- that define exactly what packages the build was allowed to fetch.
-You can visit the repository and read exactly what went into the `hi/python:3-12` image you used as the base during the lab.
+You can visit the repository and read exactly what went into the `hi/python:3.12` image you used as the base during the lab.
 This is what "traceable back to source" means in practice, not an assertion in a document, but a direct link you can follow.
 
 How many total inputs went into this build?
@@ -181,7 +181,7 @@ It resolves and records the dependencies listed in the git commit, then the buil
 The git commit, the hermetic flag, and hermeto in the materials list point at the same thing from three directions.
 Together they describe the conditions for an independently reproducible build: the source is public, the build tools are pinned by digest, the build environment is hermetic, and Konflux CI itself is a public system.
 Given those inputs, you can run the same pipeline and verify that the output matches the published image digest -- rather than taking the provenance record on trust alone.
-If you'd like to read more about these reproducible builds, here's a blog from an engineer that will provide more details: https://developers.redhat.com/articles/2026/03/26/reproducible-builds-project-hummingbird#hummingbird_reproducibility[Reproducible Builds: Project Hummingbird^].
+If you'd like to read more about these reproducible builds, here's a blog from an engineer that provides more details: https://developers.redhat.com/articles/2026/03/26/reproducible-builds-project-hummingbird#hummingbird_reproducibility[Reproducible Builds: Project Hummingbird^].
 
 [[summary]]
 == Summary

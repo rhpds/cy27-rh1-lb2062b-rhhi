@@ -120,7 +120,7 @@ The following checks were performed on each of these signatures:
 
 [{"critical":{"identity":{"docker-reference":"registry-{guid}.{domain}/rhhi-demo"},...
 ----
-Notice that the JSON output has the same format as the public signature examined at the end of the earlier exercise.
+The JSON here is much simpler than what we discarded in the previous exercise, but shows the registry, digest, and signature information.
 
 [NOTE]
 ====
@@ -132,11 +132,11 @@ A downstream consumer verifying by tag gets the same result as verifying by dige
 [[resign-mirrored]]
 == Re-sign the Mirrored Image
 
-In the previous exercise you mirrored `python:3.12` with its digest preserved and deliberately left Red Hat's signatures behind.
-Re-signing with your own key is the second half of that pattern — your signature on the preserved digest is what makes the image verifiable inside your registry.
+In the previous exercise you mirrored `hi/python:3.12` with its digest preserved and deliberately left Red Hat's signatures behind.
+Re-signing with your own key is the second half of the mirroring pattern — your signature on the preserved digest is what makes the image verifiable inside your registry.
 
 This is a deliberate assertion: you pulled this image, you verified it in the previous exercise, and you are admitting it into your environment on your own authority.
-From this point on, everything in your registry — your application image and the vendor base you mirrored — gates on the same key.
+From this point on, everything in your registry — your application image and the vendor base you mirrored — is authenticated by the same key.
 
 Because you used `--preserve-digests`, the digest in `~/python.digest` is Red Hat's original — you are signing the genuine artifact under your own key.
 

@@ -15,7 +15,7 @@
 
 You've started with a minimized base and inventoried the contents of your application.
 One way to confirm that the image is unchanged from the one published by the vendor is by examining the signature.
-That confirmation is what keeps the chain from the source to you intact, and cryptographic signing provide the means.
+That confirmation is what keeps the chain from the source to you intact, and cryptographic signing provides the means.
 
 You'll use `cosign` to verify the signatures that Red Hat publishes on its hardened images including the base your lab image is built on.
 
@@ -66,7 +66,7 @@ Signatures can then be used to gate the introduction of a new image to a pipelin
 
 [NOTE]
 ====
-Here we discarded the default JSON output of the actual signature, in practice this could be passed to some other tool to take action based on the contents.
+Here we discard the default JSON output of the actual signature, in practice this could be passed to some other tool to take action based on the contents.
 Digests and cryptographic signatures aren't human-readable in any useful sense — there's no way to look at a SHA256 hash or a signature payload and confirm it's correct by eye.
 ====
 
