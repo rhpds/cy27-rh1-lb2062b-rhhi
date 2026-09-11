@@ -14,7 +14,7 @@
 == Introduction
 
 You've started with a minimized base and inventoried the contents of your application.
-One way to confirm that the image is unchanged from the one published by the vendor is by examine the signature.
+One way to confirm that the image is unchanged from the one published by the vendor is by examining the signature.
 That confirmation is what keeps the chain from the source to you intact, and cryptographic signing provide the means.
 
 You'll use `cosign` to verify the signatures that Red Hat publishes on its hardened images including the base your lab image is built on.
@@ -49,7 +49,7 @@ Let's verify `hi/python:3.12`, the base image your `rhhi-demo:hardened` applicat
 ----
 cosign verify --insecure-ignore-tlog \
   --key https://security.access.redhat.com/data/63405576.txt \
-  {rhhi-registry}/python:3.12
+  {rhhi-registry}/python:3.12 > /dev/null
 ----
 
 .*Expected output:*
@@ -66,10 +66,8 @@ Signatures can then be used to gate the introduction of a new image to a pipelin
 
 [NOTE]
 ====
+Here we discarded the default JSON output of the actual signature, in practice this could be passed to some other tool to take action based on the contents.
 Digests and cryptographic signatures aren't human-readable in any useful sense — there's no way to look at a SHA256 hash or a signature payload and confirm it's correct by eye.
-Verification is tool-mediated: cosign does the cryptographic comparison and reports pass or fail.
-What you verify as a human is the chain of inputs: the key came from a known, trusted source; the image reference is what you expect; and you're using a tool you trust to make the comparison correctly.
-The output tells you whether those inputs produced a match — that's the whole check.
 ====
 
 [[verify-ubi]]
@@ -84,7 +82,7 @@ Let's verify the UBI image using the local copy of the key shipped via RPM.
 ----
 cosign verify --insecure-ignore-tlog \
   --key /etc/pki/sigstore/SIGSTORE-redhat-release3 \
-  registry.access.redhat.com/ubi10/ubi:latest
+  registry.access.redhat.com/ubi10/ubi:latest > /dev/null
 ----
 
 Both approaches use the same underlying key. 
