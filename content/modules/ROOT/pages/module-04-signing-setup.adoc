@@ -1,4 +1,4 @@
-= Image Signing Setup
+= Image Digests and Mirroring
 
 .*Module Overview*
 [sidebar]
@@ -37,10 +37,6 @@ Compare what podman has locally against what the vendor registry reports, saving
 [source,bash,role=execute,subs=attributes+]
 ----
 podman image inspect hi/python:3.12 --format '{{.Digest}}'
-----
-
-[source,bash,role=execute,subs=attributes+]
-----
 skopeo inspect docker://{rhhi-registry}/python:3.12 | jq -r .Digest | tee vendor.digest
 ----
 
@@ -106,15 +102,12 @@ When `skopeo copy` moves the image, it also attempts to carry those artifacts ac
 
 We're going to follow a fairly common approach to solving this issue with mirroring.
 The common pattern is to maintain the digest to preserve the 'identity' of the vendor image, but to sign the local mirrored copy with a local key.
-The idea is that the image has crossed a 'trust boundary' when it was downloaded, and now you are the authority attesting to it's validity.
+The idea is that the image has crossed a 'trust boundary' when it was downloaded, and now you are the authority attesting to its validity.
 Remember, each step here is a link in a chain, we can extend and modify the chain so long as we don't break any earlier linkages.
 
 [NOTE]
 ====
-This isn't the only approach, and tooling is improving.
-Rather than dropping vendor signatures when re-signing, some teams preserve both: the vendor signature stays intact and an internal signature or attestation is appended alongside it — for example, a cosign attestation that includes vulnerability scan results.
-In-cluster admission policies can then enforce a two-key requirement: vendor origin identity plus internal security review identity.
-This preserves provenance all the way through the chain rather than replacing it.
+This isn't the only approach, for example some teams preserve the vendor signature stays intact and an internal signature is added to mark the 'intake' locally.
 ====
 
 [[keep-the-digest]]
@@ -135,7 +128,7 @@ Now compare the digest in your mirror against the one we captured from the regis
 
 [source,bash,role=execute,subs=attributes+]
 ----
-skopeo inspect docker://{rhhi-registry}/python:3.12 | jq -r .Digest
+skopeo inspect docker://registry-{guid}.{domain}/python:3.12 | jq -r .Digest
 cat vendor.digest
 ----
 
