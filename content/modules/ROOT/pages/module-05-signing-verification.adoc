@@ -10,6 +10,57 @@
 * Understand how signatures are stored in the registry
 --
 
+[[introduction]]
+== Introduction
+
+We've completed half of the mirroring pattern we defined earlier.
+These two images are now both under our control, but can't be verified the same way the signed original `hi/python:3.12` image can be.
+The digest is the cryptographic identifier that lets us pick exact images to use.
+The signature is the cryptographic 'seal of approval' that marks that exact image as authentic and verified, much like an SSL certificate does for a website.
+
+
+[[generate-keys]]
+== Generate a Cosign Key Pair
+
+Cosign uses a pair of cryptographic keys for signing and verification.
+The private key is what you'll use to sign.
+The public key is what consumers use to verify.
+
+We'll use a local static key pair without a password for the purposes of the lab.
+This is only for this lab and not a recommendation. 
+See the tip below for a brief list of potential strategies for key pair management.
+
+[source,bash,role=execute]
+----
+export COSIGN_PASSWORD=""
+----
+
+[source,bash,role=execute]
+----
+cosign generate-key-pair
+----
+
+.*Expected output:*
+----
+Private key written to cosign.key
+Public key written to cosign.pub
+----
+
+Share the public key widely; keep the private key secret.
+
+[TIP]
+====
+*Cosign Key Strategies*
+
+* *Development*: Generate local key pairs (as we do here)
+* *Production*: Keyless signing with OIDC identity (GitHub, GitLab, Google)
+* *Enterprise*: KMS-backed keys — AWS KMS, Azure Key Vault, GCP KMS, HashiCorp Vault
+* *High security*: Hardware Security Modules (HSM)
+
+Never commit local keys like `cosign.key` to a git repository. Always check the `cosign` documentation for https://docs.sigstore.dev/cosign/key_management/overview/[an authoritative list of keystores^].
+====
+
+
 [[sign-image]]
 == Sign the Image
 

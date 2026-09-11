@@ -3,7 +3,7 @@
 .*Module Overview*
 [sidebar]
 --
-*Learning Objectives:*
+*Objectives:*
 
 * Understand what a Software Bill of Materials (SBOM) is and why it matters
 * Create a machine-readable SBOMs for compliance

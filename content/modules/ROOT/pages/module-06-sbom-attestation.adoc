@@ -14,25 +14,24 @@
 [[about-attestations]]
 == What Is an Attestation?
 
-An attestation is additional metadata about an image -- such as an SBOM, scan results, or build provenance -- that is:
+An attestation is additional metadata about an image that is:
 
 1. Signed with the same key or identity as the image itself
 2. Stored alongside the image in the registry as an OCI artifact
 3. Verifiable by consumers before they run the image
 
+You created some 'additional metadata' about the application image by generating the SBOM in an earlier exercise.
 By attaching the SBOM as a signed attestation, anyone can prove that the SBOM came from the same trusted source as the image. 
 Attestations can be any metadata about the image, cryptographically verifiable via cosign. 
-SLSA provenance for build environment information is another type of attestation.
+SLSA provenance for build environment information is another type of attestation we'll look at a little later.
 
 [[attach-sbom]]
 == Attach the SBOM as a Signed Attestation
 
-[NOTE]
-====
-In an earlier exercise, you generated the SBOM at `~/rhhi-demo.spdx` using `syft`. Attaching it here as a signed attestation ties it cryptographically to the specific image digest you pushed in an earlier exercise.
-====
+In an earlier exercise, you generated the SBOM at `~/rhhi-demo.spdx` using `syft`. 
+Like the signature, attestations live in the registry alongside the image, tied to the specific digest.
 
-Attach the SBOM using `cosign attest`, once again using the SHA digest. 
+Attach the SBOM using `cosign attest`, once again using the SHA digest environment variable created earlier. 
 The `--predicate` flag points to the SBOM file, and `--type spdxjson` tells cosign the format.
 
 [source,bash,role=execute,subs=attributes+]
