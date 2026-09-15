@@ -3,20 +3,19 @@
 .*Module Overview*
 [sidebar]
 --
-*Learning Objectives:*
+*Objectives:*
 
 * Understand what a Software Bill of Materials (SBOM) is and why it matters
-* Generate human-readable package tables with Syft
-* Create a machine-readable SPDX-JSON SBOM for compliance
-* Query SBOM contents with `jq`
+* Create a machine-readable SBOMs for compliance
+* Query SBOM contents 
 --
 
 [[introduction]]
 == Introduction
 
-Vulnerability scanning tells you about known CVEs today, but software supply chain compliance also requires you to understand *what* is in your images — now and in the future. A Software Bill of Materials (SBOM) is that inventory.
-
-The SBOM is how you *know the baseline you chose in Module 1*: a transparent record of exactly what you inherited and what you build on top of it. It is also the artifact you'll later attach to your own image as signed, verifiable proof of its contents (Module 6), so generating a trustworthy SBOM now sets up the chain you extend for the rest of the lab.
+Vulnerability scanning tells you about known CVEs today, but software supply chain compliance also requires you to understand what is in your images. A Software Bill of Materials (SBOM) is that inventory.
+SBOMs should not only be supplied by the vendor for the base image, but also created for any derived images separately.
+This is how a chain of trust is built and extended, where each link can be checked in both directions.
 
 SBOMs are essential for:
 
@@ -110,43 +109,25 @@ jq '.packages | length' ~/rhhi-demo.spdx
 The package count from `jq` may differ slightly from Syft's cataloged count because the SPDX format includes the image itself as a top-level package entry alongside its contents. Images are still being reviewed to remove unnecessary packages, which may also change package counts from the time of writing.
 ====
 
-You can also explore individual package entries:
+Look up a specific package by name to see what the SBOM records about it:
 
 [source,bash,role=execute]
 ----
-jq '.packages[0]' ~/rhhi-demo.spdx
+jq '.packages[] |
+  select(.name == "flask") |
+  {name, versionInfo, sourceInfo}' \
+  ~/rhhi-demo.spdx
 ----
 [source,json]
 ----
 {
-  "name": "alternatives",
-  "SPDXID": "SPDXRef-Package-rpm-alternatives-ea955329131d1bd7",
-  "versionInfo": "1.33-5.1.hum1",
-  "supplier": "NOASSERTION",
-  "downloadLocation": "NOASSERTION",
-  "filesAnalyzed": true,
-  "packageVerificationCode": {
-    "packageVerificationCodeValue": "3f0b3bbfbb9d5ef4eb7571572a46c9c3bde7fc6d"
-  },
-  "sourceInfo": "acquired package info from RPM DB: /usr/lib/sysimage/rpm/rpmdb.sqlite",
-  "licenseConcluded": "NOASSERTION",
-  "licenseDeclared": "GPL-2.0-only",
-  "copyrightText": "NOASSERTION",
-  "externalRefs": [
-    {
-      "referenceCategory": "SECURITY",
-      "referenceType": "cpe23Type",
-      "referenceLocator": "cpe:2.3:a:alternatives:alternatives:1.33-5.1.hum1:*:*:*:*:*:*:*"
-    },
-    {
-      "referenceCategory": "PACKAGE-MANAGER",
-      "referenceType": "purl",
-      "referenceLocator": "pkg:rpm/redhat/alternatives@1.33-5.1.hum1?arch=x86_64&distro=hummingbird-20251124&upstream=chkconfig-1.33-5.1.hum1.src.rpm"
-    }
-  ]
+  "name": "flask",
+  "versionInfo": "3.1.3",
+  "sourceInfo": "acquired package info from installed python package manifest file: /usr/local/lib/python3.12/site-packages/flask-3.1.3.dist-info/METADATA, /usr/local/lib/python3.12/site-packages/flask-3.1.3.dist-info/RECORD"
 }
 ----
-Each package entry includes name, version, license, checksums, and supplier information — everything needed for compliance reporting.
+The `sourceInfo` field shows where syft found the package — pip-installed Python packages come from their dist-info metadata, while RPM packages come from the RPM database.
+That distinction is how the SBOM captures both layers of the image in the same format.
 
 [[sbom-formats]]
 == SBOM Formats
@@ -166,14 +147,8 @@ For compliance requirements, use `spdx-json` or `cyclonedx-json`. Both formats a
 [[summary]]
 == Summary
 
-In this module, you explored SBOMs for `rhhi-demo:hardened`.
-Having a comprehensive list of the components of images is not only needed for some compliance standards, it's also useful to reason about your applications and how they are delivered.
-You'll see what can be done with this SBOM in a later module.
+You've catalogued exactly what's in `rhhi-demo:hardened` and saved a machine-readable inventory at `~/rhhi-demo.spdx`.
+That file is the artifact you'll return to in a later exercise — it becomes a signed attestation attached to the image in the registry, so consumers can verify both the image and its contents against the same key.
 
-.*What You've Accomplished*
-
-* Generated a human-readable package listing
-* Created a machine-readable SPDX-JSON SBOM 
-* Queried the SBOM with `jq` 
-
-In the next module, we'll talk about another security focused feature of images, signatures.
+You know what's in the image.
+The next exercise establishes where it came from.

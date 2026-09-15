@@ -1,2 +1,2 @@
 #!/bin/sh
-echo "Starting module-04: Push and Generate Keys" >> /tmp/progress.log
+echo "Starting module-04: Image Digests and Mirroring" >> /tmp/progress.log

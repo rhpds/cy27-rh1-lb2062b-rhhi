@@ -1,26 +1,73 @@
-= Image Signing Setup
+= Image Digests and Mirroring
 
 .*Module Overview*
 [sidebar]
 --
 *Objectives:*
 
-* Push a container image to the local SSL-enabled registry
-* Capture the image digest for use with cosign
-* Generate a cosign key pair for signing
+* Mirror a vendor image while preserving its digest
+* Understand what a mirror keeps and what it loses from the trust chain
+* Push your application image to the local registry
 --
+
+[[introduction]]
+== Introduction
+
+In the previous exercise you verified that `hi/python:3.12` — the base your application is built from — carries a valid Red Hat signature.
+That verification happened against the image in Red Hat's registry.
+
+In practice, most organizations don't pull directly from vendor registries at build or deployment time.
+Depending on an external registry creates availability risk: if it's slow or unreachable, builds fail.
+In air-gapped and disconnected environments there's no choice, the image has to be in a registry you operate.
+
+Moving images can change them if care isn't taken when creating a local mirror.
+This exercise is about what that move does to the chain you just established.
+
+[[digests-and-tools]]
+== Digests and How Mirroring Works
+
+A container image is identified by its digest, a SHA256 hash computed over the manifest bytes.
+For a multi-architecture image, like the `hi/python:3.12` base, that means the index manifest, which references per-platform manifests, which in turn reference the layer blobs.
+Simpler containers will have simpler manifests to describe their contents.
+Change any byte anywhere in that structure and the digest changes.
+
+The lab environment already pulled `hi/python:3.12` from the vendor registry as part of building `rhhi-demo:hardened`.
+Compare what podman has locally against what the vendor registry reports, saving the digest to use again later.
+
+[source,bash,role=execute,subs=attributes+]
+----
+podman image inspect hi/python:3.12 --format '{{.Digest}}'
+skopeo inspect docker://{rhhi-registry}/python:3.12 | jq -r .Digest | tee vendor.digest
+----
+
+.*Expected output (two different digests):*
+----
+sha256:9f3a2c1d...
+sha256:cbcfabb29dd4604204ea2bd317f356ddb3ec3ec97e210692591ad4d97db4a1cb
+----
+
+The content is identical, but the digests are different.
+When podman pulled the image, it only needed the `amd64` architecture layers for this host.
+The new local digest was computed from just that manifest, not the complete multi-architecture one in the registry.
+
+A mirror that uses `podman pull` and `podman push` would carry this same mismatch into your registry.
+The bits are fine but we've lost the link to the vendor image identity.
+
+`skopeo copy --all` copies the index and all platform manifests directly between registries without reassembling them.
+`--preserve-digests` makes that an explicit copy of the manifest bytes exactly as-is, failing if that isn't possible.
+The result is a mirror whose digest matches the one in the vendor's registry, keeping that link between our copy and the original intact.
 
 [[local-registry]]
 == Your Local Container Registry
 
-This lab environment includes a private container registry running at `registry-{guid}.{domain}`. 
+This lab environment includes a private container registry running at `registry-{guid}.{domain}`.
 It is secured with a TLS certificate issued by ZeroSSL, so standard container tools work without any insecure-registry configuration.
 
-The registry requires no login -- it is intentionally open for this lab so you can focus on signing rather than credential management.
+The registry requires no login — it is intentionally open for this lab so you can focus on signing rather than credential management.
 
 [TIP]
 ====
-The `REGISTRY` environment variable pointing to your local registry was set during lab setup and persists in your terminal session via `~/.bashrc`. If it isn't working in your session, run:
+The `REGISTRY` environment variable pointing to your local registry was set during lab setup and persists in your terminal session via `~/.bashrc`. If it isn't set in your session, run:
 
 [source,text]
 ----
@@ -30,91 +77,10 @@ source ~/.bashrc
 You can check the current value at any time with `echo $REGISTRY`.
 ====
 
-[[push-image]]
-== Tag and Push the Image
-
-The `rhhi-demo:hardened` image was built during lab setup and lives in local Podman storage. 
-To sign it, cosign needs the image to be in an OCI registry. 
-Tag it for your local registry and push it. 
-The `--digestfile` flag writes the registry-assigned digest to `~/image.digest` for later use.
-
-[source,bash,role=execute,subs=attributes+]
-----
-podman tag rhhi-demo:hardened registry-{guid}.{domain}/rhhi-demo:hardened
-----
-
-[source,bash,role=execute,subs=attributes+]
-----
-podman push --digestfile ~/image.digest registry-{guid}.{domain}/rhhi-demo:hardened
-----
-
-[[capture-digest]]
-== Capture the Image Digest
-
-Cosign 2.0 requires digest-based references for signing. 
-Tags like `:v1` are mutable -- anyone could overwrite them -- so signing a tag would be insecure. 
-The image digest is a content-addressed SHA256 hash that is immutable.
-This digest is created by the registry when the image is pushed and can be used to uniquely identify that image for standard operations as well as signing.
-
-Let's set the recorded digest as an environment variable to make our later commands a little more readable.
-[source,bash,role=execute]
-----
-IMAGE_DIGEST=$(cat ~/image.digest)
-echo "Image digest: ${IMAGE_DIGEST}"
-----
-
-.*Expected output:*
-----
-Image digest: sha256:abc123...
-----
-
-[[generate-keys]]
-== Generate a Cosign Key Pair
-
-Cosign uses a key pair for signing and verification of a digital signature. 
-The current recommendation is to use keyless signing, but that requires access to a certificate authority like Fulcio to work. 
-For this lab we use a local key pair with an empty passphrase via the environment variable so the commands don't prompt interactively.
-
-[TIP]
-====
-*Cosign Key Strategies*
-
-* *Development*: Generate local key pairs (as we do here)
-* *Production*: Keyless signing with OIDC identity (GitHub, GitLab, Google)
-* *Enterprise*: KMS-backed keys -- AWS KMS, Azure Key Vault, GCP KMS, HashiCorp Vault
-* *High security*: Hardware Security Modules (HSM)
-
-Never commit local keys like `cosign.key` to a git repository. Always check the `cosign` documentation for https://docs.sigstore.dev/cosign/key_management/overview/[an authoritative list of keystores^].
-====
-
-[source,bash,role=execute]
-----
-export COSIGN_PASSWORD=""
-----
-
-[source,bash,role=execute]
-----
-cosign generate-key-pair
-----
-
-.*Expected output:*
-----
-Private key written to cosign.key
-Public key written to cosign.pub
-----
-
-The private key (`cosign.key`) is what you'll use to *sign*.
-The public key (`cosign.pub`) is what consumers use to *verify*.
-Share the public key widely -- keep the private key secret.
-
 [[mirror-vendor-image]]
-== Mirror a Vendor Image to Your Registry
+== Mirror the Python Base Image
 
-Pushing your own image is one reason to use a local registry. Another is *mirroring* a vendor image you depend on.
-Teams do this to remove an external dependency from a build pipeline -- so a build never fails because an upstream registry is slow or unreachable -- or to serve a disconnected, air-gapped environment that has no route to the public internet at all.
-
-Let's mirror the same base image you verified in Module 3, `{rhhi-registry}/python:3.12`, into your local registry.
-Use `skopeo copy` with `--all` to copy the complete multi-arch image index.
+Let's bring `{rhhi-registry}/python:3.12` into the local registry.
 
 [source,bash,role=execute,subs=attributes+]
 ----
@@ -123,47 +89,62 @@ skopeo copy --all \
   docker://registry-{guid}.{domain}/python:3.12
 ----
 
-The image layers copy, but at the very end the command *fails*.
+The image layers copy, but the command fails at the end.
 
 .*Expected output (final line):*
 ----
 FATA[...] copying image 1/2 from manifest list: writing signatures: writing sigstore attachments is disabled by configuration
 ----
 
-A signature isn't part of an image -- it is a separate artifact the registry stores beside it. `skopeo copy` tried to carry the vendor's signatures across as well, but your registry isn't configured to accept them, so the copy couldn't finish. The lesson is blunt: *you can mirror the image, but you cannot mirror the vendor's signature.*
+Cosign signatures are OCI artifacts stored in the registry alongside the image, linked to the image's digest via the referrers API.
+They are not embedded in the image itself — they live beside it in the source registry.
+When `skopeo copy` moves the image, it also attempts to carry those artifacts across, and fails.
+
+We're going to follow a fairly common approach to solving this issue with mirroring.
+The common pattern is to maintain the digest to preserve the 'identity' of the vendor image, but to sign the local mirrored copy with a local key.
+The idea is that the image has crossed a 'trust boundary' when it was downloaded, and now you are the authority attesting to its validity.
+Remember, each step here is a link in a chain, we can extend and modify the chain so long as we don't break any earlier linkages.
+
+[NOTE]
+====
+This isn't the only approach, for example some teams preserve the vendor signature stays intact and an internal signature is added to mark the 'intake' locally.
+====
 
 [[keep-the-digest]]
-== What the Mirror Keeps: the Digest
+== Copy With a Preserved Digest
 
-If the signature can't come along, what can? The thing that matters most for integrity: the image's *digest*. Run the copy again with two additions. `--remove-signatures` leaves the vendor's detached signatures behind so the copy can finish. `--preserve-digests` tells skopeo to copy the manifest exactly -- without it, skopeo re-serializes the image index on the way in and the mirror ends up with a *different* digest than the one Red Hat published. The `--digestfile` flag records the resulting digest to `~/python.digest` for later use.
+Run the copy again with `--remove-signatures` to leave the vendor's signatures in the source registry, and `--preserve-digests` to copy the manifest without rewriting it.
+The `--digestfile` flag records the resulting digest so we can use it later.
 
 [source,bash,role=execute,subs=attributes+]
 ----
-skopeo copy --all --preserve-digests --remove-signatures --digestfile ~/python.digest \
+skopeo copy --all --preserve-digests --remove-signatures \
+  --digestfile ~/python.digest \
   docker://{rhhi-registry}/python:3.12 \
   docker://registry-{guid}.{domain}/python:3.12
 ----
 
-This time it completes. Now prove the mirror is the exact image Red Hat published by comparing the index digest each registry reports.
+Now compare the digest in your mirror against the one we captured from the registry.
 
 [source,bash,role=execute,subs=attributes+]
 ----
-skopeo inspect docker://{rhhi-registry}/python:3.12 | jq -r .Digest
 skopeo inspect docker://registry-{guid}.{domain}/python:3.12 | jq -r .Digest
+cat vendor.digest
 ----
 
-.*Expected output (the two digests are identical):*
+.*Expected output (both lines identical):*
 ----
 sha256:cbcfabb29dd4604204ea2bd317f356ddb3ec3ec97e210692591ad4d97db4a1cb
 sha256:cbcfabb29dd4604204ea2bd317f356ddb3ec3ec97e210692591ad4d97db4a1cb
 ----
 
-That same digest is now recorded in `~/python.digest` -- check it with `cat ~/python.digest`. A digest is a content-addressed SHA256 over the image index and everything it references: identical digests mean identical content, every layer and every byte. Your mirror is provably the same image the vendor published, and that digest is exactly what you'll use to sign it in the next module.
+Identical digests mean identical content — every layer, every byte.
+Your mirror is provably the same image Red Hat published.
 
 [[origin-is-gone]]
-== What the Mirror Loses: Proof of Origin
+== Confirm the Signature Gap
 
-An identical digest proves the bits didn't change. It does *not* prove who produced them -- that was the signature's job, and the signature stayed behind. Verify the mirror the same way you verified the original in Module 3, using Red Hat's public key.
+You explicitly left the vendor signatures behind, so attempting to verify the local mirror will fail at the moment.
 
 [source,bash,role=execute,subs=attributes+]
 ----
@@ -179,19 +160,41 @@ Error: no matching signatures:
 main.go:74: error during command execution: no matching signatures:
 ----
 
-Verification *fails* -- exactly as expected. Nothing is wrong with the image; there is simply no signature in your registry for cosign to check.
+The image is in your registry with its digest intact, but no signature for cosign to check.
+In the next exercise, we'll look at how to close the gap in the chain with our own signatures.
 
-[NOTE]
-====
-A digest and a signature answer different questions. A digest answers *"is this the same image?"* -- and yours is. A signature answers *"who vouches for it?"* -- and that proof did not make the trip.
+[[push-image]]
+== Push Your Application Image
 
-This is sharpest in the disconnected case you mirror *for*. Comparing digests only works while you can still reach the vendor to compare against; in an air-gapped environment you can't. There, a signature you can verify offline against a key you already hold is the only way to prove origin.
-====
+Tags are mutable — a tag can be reassigned to a different image at any time, which makes signing a tag meaningless.
+Cosign signs digests since those are computed, and as we saw, change if anything about the image changes.
 
-You've opened a gap in the chain: a legitimate operation, done for good reasons, that leaves a mirrored image whose *contents* you can trust but whose *origin* you can no longer prove. In the next module you'll close that gap -- by taking custody of the image and signing it with your own key.
+[source,bash,role=execute,subs=attributes+]
+----
+podman tag rhhi-demo:hardened registry-{guid}.{domain}/rhhi-demo:hardened
+----
+
+Cosign attaches signatures as OCI artifacts in a registry, so it needs to be pushed to the local registry before we move on.
+
+The `--digestfile` flag captures the digest the registry assigns when the image is pushed, which is what you'll hand to cosign in the next exercise.
+[source,bash,role=execute,subs=attributes+]
+----
+podman push --digestfile ~/image.digest registry-{guid}.{domain}/rhhi-demo:hardened
+----
+
+[source,bash,role=execute]
+----
+IMAGE_DIGEST=$(cat ~/image.digest)
+echo "Image digest: ${IMAGE_DIGEST}"
+----
+
+.*Expected output:*
+----
+Image digest: sha256:abc123...
+----
 
 == Summary
 
-Your application image is in the registry and you have a key pair ready.
-You've also mirrored a vendor image and seen the trade-off a mirror makes: you keep the image and its verifiable digest, but the vendor's signature stays behind.
-In the next module, you'll sign your own image, verify it, and take custody of the mirrored image by signing it with your own key -- so everything in your registry gates on a key you control.
+You have two images in your local registry: the vendor base you mirrored from Red Hat and your application built from it.
+We have the digests, but both are unsigned.
+In the next exercise, we'll look at how to create and attach signatures using `cosign`.

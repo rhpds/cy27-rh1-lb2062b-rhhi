@@ -5,8 +5,7 @@
 --
 *Objectives:*
 
-* Enable the rootless Podman socket for API-based tools
-* Scan a hardened container image for CVEs using Grype
+* Scan a hardened container image for CVEs 
 * Compare vulnerability counts between a hardened image and a UBI-based image
 * Understand the security benefits of minimal base images
 --
@@ -14,16 +13,14 @@
 [[introduction]]
 == Introduction
 
-Every image in this lab comes from Red Hat, a trusted source.
-The question this module answers is not *whether* to trust that source, but *which* starting point gives an application the cleanest foundation to build on.
-A base image you inherit carries its packages -- and every CVE in them -- into everything you ship on top of it.
+The base image you choose carries its packages, and every CVE in them, into everything you ship on top of it.
+This is the real impact of goals like 'zero CVE images', improving the signal to noise ratio for container scanning.
 Choosing a low-noise baseline means fewer vulnerabilities to triage for the life of the application.
 
-You'll use industry-standard tools to measure that noise for two different starting points.
-Two application images are pre-built and waiting for you:
+Two application images are available in this lab environment.
 
-* `rhhi-demo:hardened` — a Flask web app built using Red Hat Hardened Images as the runtime base (`hi/python:3.12`), using the included `pip` to install the application dependencies. 
-* `rhhi-demo:ubi` — the same Flask app built from the standard UBI10 base image (`ubi10/ubi`) with Python 3.12 and pip installed via dnf, a common real-world pattern for containerizing Python applications
+* `rhhi-demo:ubi` — a Flask app built from the standard UBI10 base image (`ubi10/ubi`) with Python 3.12 and `pip` installed via `dnf`, a common real-world pattern for containerizing Python applications
+* `rhhi-demo:hardened` — the same Flask web app built using Red Hat Hardened Images as the runtime base (`hi/python:3.12`), using the included `pip` to install the application dependencies. 
 
 Both images run the same application code and the same version of Python 3.12. 
 The only difference is the base image. 
@@ -34,7 +31,7 @@ You'll also create and explore the Software Bill of Materials (SBOM) for a conta
 == Step 1: Enable the Podman Socket
 
 Grype and Syft use the Podman API socket to find and inspect images. 
-As a rootless user, you can enable this socket just for your session — you don't need system-level access.
+You can enable this socket just for your session.
 
 [source,bash,role=execute]
 ----
@@ -60,14 +57,14 @@ grype version
 .*Expected output (varies, but typically):*
 ....
 Application:         grype
-Version:             0.111.0
-BuildDate:           2026-04-09T13:14:56Z
-GitCommit:           1f19355a7ee2d7e2bd58da6255bdeb618eb0c0d1
-GitDescription:      v0.111.0
+Version:             0.118.0
+BuildDate:           2026-08-27T19:58:02Z
+GitCommit:           756eb9a24f7beeafb6871a24e943e8a3ae210695
+GitDescription:      v0.118.0
 Platform:            linux/amd64
-GoVersion:           go1.25.9
+GoVersion:           go1.26.3
 Compiler:            gc
-Syft Version:        v1.42.4
+Syft Version:        v1.51.1
 Supported DB Schema: 6
 ....
 
@@ -78,14 +75,14 @@ syft version
 .*Expected output (varies, but typically):*
 ....
 Application:   syft
-Version:       1.42.4
-BuildDate:     2026-04-08T20:39:07Z
-GitCommit:     f6189175279981a79d8d8c15669c570f15a00568
-GitDescription: v1.42.4
+Version:       1.51.1
+BuildDate:     2026-08-27T16:55:02Z
+GitCommit:     91a0032987d91b7411b52f6f5c185c5e7f775495
+GitDescription: v1.51.1
 Platform:      linux/amd64
-GoVersion:     go1.26.2
+GoVersion:     go1.26.3
 Compiler:      gc
-SchemaVersion: 16.1.3
+SchemaVersion: 16.1.10
 ....
 
 [source,bash,role=execute]
@@ -167,38 +164,10 @@ While it is likely these may be difficult to trigger in a containerized environm
 Depending on the scanners used, risk triage will vary and severity may not match that https://access.redhat.com/security/updates/classification[assigned by Red Hat^].
 This type of cross-team toil is exactly what Red Hat Hardened Images aims to remove from the development lifecycle.
 
-The `--only-fixed` flag shows only vulnerabilities that have available patches. 
-This focuses attention on immediately actionable issues rather than those currently under investigation, deferred, or `wontfix` items. 
+Both images include the Python dependencies for Flask (`pip install flask`), so any CVEs in the application would be common.
 
-[source,bash,role=execute]
-----
-grype rhhi-demo:ubi --by-cve --only-fixed
-----
-[source,bash,role=execute]
-----
-grype rhhi-demo:hardened --by-cve --only-fixed
-----
-Notice that while the list changes, the header reported identical information.
-This is only an output filter.
-
-[TIP]
-====
-This flag and others will filter the output for any scan. The full options and outputs for `grype` are outside the scope of this lab.
-====
-
-**Key Insight:**
-
-Both starting points come from the same trusted source; the difference is the *noise* each one hands you to triage.
-
-* **Hardened image** (`rhhi-demo:hardened`): Minimized image tracking upstream to deliver new images as quickly as changes are available. Few packages means the CVEs that do appear are real signal.
-* **UBI image** (`rhhi-demo:ubi`): General purpose base image tracking RHEL to deliver backported fixes for maximum flexibility and supportability. A larger package set carries a long low/medium tail -- often unreachable, awaiting a backport -- that still costs triage effort to evaluate.
-
-Both images run the same Flask app on the same Python.
-The CVE difference comes entirely from the base image — the hardened runtime includes only what a Python application needs at runtime, while even a minimal UBI base carries package management infrastructure and general-purpose system tools. 
-Every extra package is a potential CVE surface.
 Within the UBI family, there are additional types beyond the standard image used here that also address this sort of package reduction.
 
-Both images include the Python dependencies for Flask (`pip install flask`), so any CVEs in the application would be common.
 
 [[summary]]
 == Summary
@@ -206,14 +175,3 @@ Both images include the Python dependencies for Flask (`pip install flask`), so 
 The choice of starting point can greatly impact the amount of triage required by teams to secure an application.
 Starting from a low-noise baseline is the first link in a chain you'll extend through the rest of this lab: a clean foundation you can inventory, verify, and carry forward with confidence.
 While this is not the only factor when considering base image choices, it's important to understand how the different life cycle choices influence the results.
-
-
-.*What You've Accomplished*
-
-* Enabled the rootless Podman socket for API-based tool access
-* Verified grype and syft installations
-* Scanned `rhhi-demo:hardened` and confirmed CVE counts
-* Scanned `rhhi-demo:ubi` and observed the differences
-* Understood why curated minimal base images reduce attack surface
-
-Proceed to Module 2 to explore SBOMs, required for some compliance regimes.

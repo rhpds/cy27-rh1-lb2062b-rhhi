@@ -14,25 +14,24 @@
 [[about-attestations]]
 == What Is an Attestation?
 
-An attestation is additional metadata about an image -- such as an SBOM, scan results, or build provenance -- that is:
+An attestation is additional metadata about an image that is:
 
 1. Signed with the same key or identity as the image itself
 2. Stored alongside the image in the registry as an OCI artifact
 3. Verifiable by consumers before they run the image
 
+You created some 'additional metadata' about the application image by generating the SBOM in an earlier exercise.
 By attaching the SBOM as a signed attestation, anyone can prove that the SBOM came from the same trusted source as the image. 
 Attestations can be any metadata about the image, cryptographically verifiable via cosign. 
-SLSA provenance for build environment information is another type of attestation.
+SLSA provenance for build environment information is another type of attestation we'll look at a little later.
 
 [[attach-sbom]]
 == Attach the SBOM as a Signed Attestation
 
-[NOTE]
-====
-In Module 2, you generated the SBOM at `~/rhhi-demo.spdx` using `syft`. Attaching it here as a signed attestation ties it cryptographically to the specific image digest you pushed in Module 4.
-====
+In an earlier exercise, you generated the SBOM at `~/rhhi-demo.spdx` using `syft`. 
+Like the signature, attestations live in the registry alongside the image, tied to the specific digest.
 
-Attach the SBOM using `cosign attest`, once again using the SHA digest. 
+Attach the SBOM using `cosign attest`, once again using the SHA digest environment variable created earlier. 
 The `--predicate` flag points to the SBOM file, and `--type spdxjson` tells cosign the format.
 
 [source,bash,role=execute,subs=attributes+]
@@ -90,7 +89,7 @@ cosign download attestation --output-file cosign.sbom \
   registry-{guid}.{domain}/rhhi-demo@${IMAGE_DIGEST}
 ----
 
-The downloaded file can be decoded to standard JSON and can be processed with any JSON tool.
+The envelope is just a signed wrapper around the SBOM you created. 
 
 [source,bash,role=execute]
 ----
@@ -100,12 +99,22 @@ file cosign.sbom
 cosign.sbom: JSON text data
 ....
 
+We can query the SBOM for the `flask` package information just like we did in the earlier exercise. 
+We just need to add a few more options to unwrap it from base64.
 [source,bash,role=execute]
 ----
-jq -r '.payload' cosign.sbom | base64 -d | jq '.predicate.packages | length'
+jq -r '.payload | @base64d | fromjson |
+  .predicate.packages[] |
+  select(.name == "flask") |
+  {name, versionInfo, sourceInfo}' \
+  cosign.sbom
 ----
 ....
-69
+{
+  "name": "flask",
+  "versionInfo": "3.1.3",
+  "sourceInfo": "acquired package info from installed python package manifest file: /usr/local/lib/python3.12/site-packages/flask-3.1.3.dist-info/METADATA, /usr/local/lib/python3.12/site-packages/flask-3.1.3.dist-info/RECORD"
+}
 ....
 
 == Summary
@@ -118,7 +127,7 @@ You've established a complete chain of trust for your own container image:
 * *SBOM Attestation*: Proves the SBOM belongs to this specific image digest
 * *Verification*: Anyone with the public key can verify the image and its SBOM
 
-Every link you've added -- signature and attestation -- is one Red Hat also produces for the images you inherited. In the next module you'll look at the link that sits *before* yours: the build provenance the source attaches to prove where its images came from.
+Every link you've added -- signature and attestation -- is one Red Hat also produces for the images you inherited. In the next exercise you'll look at the link that sits *before* yours: the build provenance the source attaches to prove where its images came from.
 
 .*Production Best Practices*
 

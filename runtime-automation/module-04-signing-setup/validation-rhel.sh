@@ -7,13 +7,6 @@ echo "Validating module-04" >> /tmp/progress.log
 # XDG_RUNTIME_DIR); the registry is anonymous so a missing file is harmless.
 AUTHFILE=/home/rhel/.config/containers/auth.json
 
-# Module 5 signs with these keys.
-if [ ! -f /home/rhel/cosign.key ] || [ ! -f /home/rhel/cosign.pub ]; then
-    echo "FAIL: cosign key pair not found" >> /tmp/progress.log
-    echo "HINT: Generate the cosign key pair as shown in this module" >> /tmp/progress.log
-    exit 1
-fi
-
 # Module 5 signs rhhi-demo@<image.digest> and verifies rhhi-demo:hardened by tag, so the
 # registry tag must resolve to the digest recorded in ~/image.digest.
 if [ ! -f /home/rhel/image.digest ]; then
@@ -44,5 +37,5 @@ if [ "$REG_PYTHON_DIGEST" != "$PYTHON_DIGEST" ]; then
     exit 1
 fi
 
-echo "PASS: cosign keys present; rhhi-demo and python mirror digests match what Module 5 will sign" >> /tmp/progress.log
+echo "PASS: rhhi-demo and python mirror digests match what Module 5 will sign" >> /tmp/progress.log
 exit 0
