@@ -6,7 +6,7 @@
 *Objectives:*
 
 * Understand what a Software Bill of Materials (SBOM) is and why it matters
-* Create a machine-readable SBOMs for compliance
+* Create a machine-readable SBOM for compliance
 * Query SBOM contents 
 --
 

@@ -6,8 +6,7 @@
 *Objectives:*
 
 * Understand how cosign verifies container image signatures
-* Verify a Red Hat Hardened Image signature using a public key URL
-* Save verification output for later reference
+* Verify a Red Hat images using publicly available keys
 --
 
 [[introduction]]
