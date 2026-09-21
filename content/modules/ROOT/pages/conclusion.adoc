@@ -1,0 +1,55 @@
+= Conclusion and Next Steps
+
+[[the-chain]]
+== The Trust Chain in Summary
+
+Every artifact you worked with in this lab is connected:
+
+. A low-noise base image (zero CVEs at ship time) -- chosen before the application is built.
+. An SBOM -- a machine-readable inventory of every package in the image.
+. A signature -- proof the image hasn't changed since it was signed.
+. A signed SBOM attestation -- proof the SBOM belongs to this specific image digest.
+. Build provenance -- a record of the builder identity, environment controls, and every pinned input.
+
+[[what-you-learned]]
+== What You've Learned
+
+* *Module 1 — Vulnerability Scanning*: A clean base image eliminates scanner noise before you write a line of application code. Zero CVEs means every finding that appears after is yours to own.
+
+* *Module 2 — Working with SBOMs*: An SBOM turns an opaque image into an auditable inventory. Without it, a signature only proves the image hasn't changed -- it can't say what's inside.
+
+* *Module 3 — Verifying Published Signatures*: Trusting images requires the ability to verify what exists on disk is the same thing as in the registry. Using cryptographically signatures makes this simple.
+
+* *Module 4 — Image Mirroring Setup*: Internal tooling doesn't need to break the chain of trust, a little setup and process can include your delivery infrastructre in the provenance of an image.
+
+* *Module 5 — Image Signing and Verification*: Creating signatures for images is important for your own applications, but also adding custody indications to imported images. 
+
+* *Module 6 — Image SBOM Attestation*: Attestation upgrades a signature from identity proof to evidence carrier. The SBOM is no longer a separate file -- it's cryptographically bound to this exact image digest.
+
+* *Module 7 — Establishing Supply Chain Trust*: Provenance closes the final gap: you can trace an image back to a specific source commit, builder identity, and hermetic build environment. That's the claim a vendor makes for every signed image -- and the standard you can now require from any of them.
+
+
+[[references]]
+== References
+
+*Red Hat Resources*
+
+* https://images.redhat.com/[Red Hat Hardened Images catalog^]
+* https://github.com/tektoncd/chains/blob/main/docs/config.md[Tekton Chains configuration documentation^]
+
+[[next-steps]]
+== Next Steps
+
+The techniques in this lab apply wherever you build and ship containers.
+
+*Integrate into your CI/CD pipeline*
+
+* Run scanners on every build. Fail the pipeline on critical CVEs above your threshold.
+* Add signatures and attestation as post-build steps.
+* Extend those policies to require a verified SBOM attestation for running compliance-sensitive workloads.
+
+*Explore the Red Hat ecosystem*
+
+* https://access.redhat.com/products/red-hat-quay[Red Hat Quay^] stores Cosign signatures and SBOM attachments natively alongside images.
+* https://access.redhat.com/products/red-hat-advanced-cluster-security-for-kubernetes[Red Hat Advanced Cluster Security (RHACS)^] integrates vulnerability scanning and image signing policy enforcement.
+* https://access.redhat.com/documentation/en-us/red_hat_openshift_pipelines[Red Hat OpenShift Pipelines^] with Tekton Chains generates SLSA provenance for your builds automatically -- the same provenance you inspected in Module 7.
