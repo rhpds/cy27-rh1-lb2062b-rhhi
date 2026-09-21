@@ -14,6 +14,19 @@
         ansible_ssh_user: "{{ lookup('ansible.builtin.env', 'BASTION_USER') }}"
         ansible_ssh_pass: "{{ lookup('ansible.builtin.env', 'BASTION_PASSWORD') }}"
 
+- name: E2E pre-flight — verify external services
+  hosts: all:!localhost
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Verify cosign can verify a Red Hat published signature
+      ansible.builtin.command: >
+        /usr/local/bin/cosign verify
+        --insecure-ignore-tlog=true
+        --key https://security.access.redhat.com/solutions/keys/00da75f2b6a8
+        registry.access.redhat.com/hi/python:3.12
+      changed_when: false
+
 - name: E2E - setup, solve and validate all modules
   hosts: all:!localhost
   gather_facts: false
