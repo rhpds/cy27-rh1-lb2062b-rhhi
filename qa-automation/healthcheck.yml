@@ -1,5 +1,6 @@
 ---
-# Healthcheck QA — verifies lab hosts are reachable via SSH.
+# Healthcheck QA — verifies the provisioned lab environment is complete.
+# A failing check means the environment is unusable and should be re-provisioned.
 # Non-destructive: does not modify any lab state.
 
 - name: Build inventory
@@ -19,5 +20,62 @@
   gather_facts: false
   become: false
   tasks:
-    - name: Verify SSH connectivity
-      ansible.builtin.ping:
+    - name: Verify pre-staged lab files are present
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      register: lab_files
+      loop:
+        - /home/rhel/flask/app.py
+        - /home/rhel/flask/Containerfile
+        - /home/rhel/flask/Containerfile.ubi
+
+    - name: Fail if any pre-staged file is missing
+      ansible.builtin.fail:
+        msg: "Pre-staged file missing: {{ item.item }}"
+      when: not item.stat.exists
+      loop: "{{ lab_files.results }}"
+
+    - name: Verify required tools are installed
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      register: tool_binaries
+      loop:
+        - /usr/local/bin/grype
+        - /usr/local/bin/syft
+        - /usr/local/bin/cosign
+
+    - name: Fail if any required tool is missing
+      ansible.builtin.fail:
+        msg: "Required tool missing: {{ item.item }}"
+      when: not item.stat.exists
+      loop: "{{ tool_binaries.results }}"
+
+    - name: Verify grype vulnerability database is present
+      ansible.builtin.stat:
+        path: /home/rhel/.cache/grype/db
+      register: grype_db
+
+    - name: Fail if grype database is missing
+      ansible.builtin.fail:
+        msg: "Grype vulnerability database missing — grype db update did not complete during setup"
+      when: not grype_db.stat.exists
+
+    - name: Verify pre-pulled and pre-built images are present
+      ansible.builtin.command: podman image exists {{ item }}
+      changed_when: false
+      loop:
+        - registry.access.redhat.com/hi/python:3.12-builder
+        - registry.access.redhat.com/hi/python:3.12
+        - registry.access.redhat.com/ubi10/ubi
+        - rhhi-demo:hardened
+        - rhhi-demo:ubi
+
+    - name: Verify registry is responding
+      ansible.builtin.command: curl -sk -o /dev/null -w '%{http_code}' https://localhost/v2/
+      register: registry_http
+      changed_when: false
+      failed_when: registry_http.stdout not in ['200', '401']
+
+    - name: Verify REGISTRY environment variable is set in bashrc
+      ansible.builtin.command: grep -q 'REGISTRY=' /home/rhel/.bashrc
+      changed_when: false
