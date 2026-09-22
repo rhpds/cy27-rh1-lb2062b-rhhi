@@ -23,8 +23,8 @@ spec:
   title: "Container Image Scanning, SBOMs, and Signing"
   learning_objectives:
     - "Scan container images using Grype to identify CVE exposure and compare vulnerability counts between a Red Hat Hardened Image and a UBI10-based image"
-    - "Generate machine-readable SPDX-JSON SBOMs for container images using Syft and inspect package metadata, supplier data, and PURL references"
-    - "Verify published cryptographic image signatures using Cosign against Red Hat's official public keys and inspect the in-toto envelope structure"
+    - "Generate machine-readable SPDX-JSON SBOMs for container images using Syft and query package metadata using jq"
+    - "Verify published cryptographic image signatures using Cosign against Red Hat's official public keys"
     - "Configure a per-student TLS-enabled OCI registry, push container images by immutable digest, and mirror a vendor image using Skopeo"
     - "Sign container images by digest using Cosign and verify OCI signature artifacts as a downstream consumer would"
     - "Attest a signed SBOM to a container image using cosign attest and verify the attestation envelope for offline inspection"
