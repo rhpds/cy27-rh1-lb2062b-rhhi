@@ -5,6 +5,8 @@ echo "Solving module-05: Image Signing and Verification" >> /tmp/progress.log
 . /home/rhel/.bashrc 2>/dev/null || true
 
 # Generate the key pair that module-05 introduces
+# Clear any pre-existing keys from previous attempts
+rm -f /home/rhel/cosign.key /home/rhel/cosign.pub
 runuser -l rhel -c "cd ~ && COSIGN_PASSWORD='' /usr/local/bin/cosign generate-key-pair" >> /tmp/progress.log 2>&1
 
 IMAGE_DIGEST=$(cat /home/rhel/image.digest 2>/dev/null)
