@@ -8,7 +8,7 @@ IMAGE_DIGEST=$(cat /home/rhel/image.digest 2>/dev/null)
 
 if [ ! -f /home/rhel/rhhi-demo.spdx ]; then
     fail_validation - <<'EOF'
-**Unable to complete this stage:** SBOM file `~/rhhi-demo.spdx` was not found.
+SBOM file `~/rhhi-demo.spdx` was not found.
 
 Review **“Step 2: Generate a Machine-Readable SPDX SBOM”** in Module 2, then try again.
 EOF

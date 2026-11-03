@@ -58,8 +58,8 @@ class ValidationOutputTests(unittest.TestCase):
 
     def test_multiline_markdown_is_preserved_in_job_output(self):
         message = (
-            "**Validation incomplete:** Image `rhhi-demo:builder` was not found.\n\n"
-            "Review **“Switch to the Builder Variant”** in Module 2, then validate again."
+            "Image `rhhi-demo:builder` was not found.\n\n"
+            "Review **“Switch to the Builder Variant”**, then validate again."
         )
         runtime, output = self.runtime_tree(
             "#!/bin/sh\nset -e\nfail_validation - <<'EOF'\n" + message + "\nEOF\n"
@@ -117,15 +117,17 @@ class ValidationOutputTests(unittest.TestCase):
                 if not line.startswith("Review ") and '"Review ' not in line:
                     continue
                 match = re.search(r"in Module (\d+)", line)
-                self.assertIsNotNone(match, f"{script}: {line}")
-                pages = list((ROOT / "content/modules/ROOT/pages").glob(f"module-{int(match[1]):02d}-*.adoc"))
-                self.assertEqual(len(pages), 1, f"{script}: Module {match[1]}")
+                module_number = int(match[1]) if match else int(script.parent.name.split("-")[1])
+                if match:
+                    self.assertNotEqual(module_number, int(script.parent.name.split("-")[1]), line)
+                pages = list((ROOT / "content/modules/ROOT/pages").glob(f"module-{module_number:02d}-*.adoc"))
+                self.assertEqual(len(pages), 1, f"{script}: Module {module_number}")
                 headings = {
                     re.sub(r"\s+", " ", heading).strip()
                     for heading in re.findall(r"^={1,3}\s+(.*)$", pages[0].read_text(), re.M)
                 }
                 for section in re.findall(r"\*\*“([^”]+)”\*\*", line):
-                    self.assertIn(section, headings, f"{script}: Module {match[1]}: {section}")
+                    self.assertIn(section, headings, f"{script}: Module {module_number}: {section}")
 
 
 if __name__ == "__main__":

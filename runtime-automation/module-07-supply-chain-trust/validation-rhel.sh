@@ -3,9 +3,9 @@ echo "Validating module-07" >> /tmp/progress.log
 
 if [ ! -f /home/rhel/redhat.sbom ]; then
     fail_validation - <<'EOF'
-**Validation incomplete:** Vendor attestation file `~/redhat.sbom` was not found.
+Vendor attestation file `~/redhat.sbom` was not found.
 
-Review **“Download the Vendor's Attestations”** in Module 7, then validate again.
+Review **“Download the Vendor's Attestations”**, then validate again.
 EOF
 fi
 
@@ -14,9 +14,9 @@ BUILDER=$(runuser -l rhel -c "jq -r 'select((.payload | @base64d | fromjson | .p
 
 if [ -z "$BUILDER" ]; then
     fail_validation - <<'EOF'
-**Validation incomplete:** An SLSA provenance builder ID could not be read from `~/redhat.sbom`.
+An SLSA provenance builder ID could not be read from `~/redhat.sbom`.
 
-Review **“Isolate the SLSA Provenance”** in Module 7, then validate again.
+Review **“Isolate the SLSA Provenance”**, then validate again.
 EOF
 fi
 
