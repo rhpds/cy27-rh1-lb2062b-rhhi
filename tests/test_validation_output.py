@@ -6,6 +6,7 @@ import shutil
 import subprocess
 import tempfile
 import unittest
+import uuid
 from pathlib import Path
 
 
@@ -41,19 +42,21 @@ class ValidationOutputTests(unittest.TestCase):
         wrapper = (ROOT / "runtime-automation/main.yml").read_text()
         # The temporary local host does not require root privileges.
         (runtime / "main.yml").write_text(wrapper.replace("          become: true\n", "          become: false\n"))
-        module = runtime / "example"
+        module = runtime / f"rhhi-b-test-{uuid.uuid4().hex}"
         module.mkdir()
         (module / "validation-rhel.sh").write_text(script)
         output = self.root / "job"
         output.mkdir()
-        return runtime, output
+        log = Path("/tmp/runtime-scripts") / module.name / "validation-rhel.log"
+        self.addCleanup(shutil.rmtree, log.parent, ignore_errors=True)
+        return runtime, output, module.name, log
 
-    def run_runtime(self, runtime, output):
+    def run_runtime(self, runtime, output, module_name):
         return run_playbook(
             runtime / "main.yml",
             cwd=runtime,
             env={"BASTION_HOST": "rhel", "BASTION_PORT": "22"},
-            extra_vars={"module_dir": "example", "module_stage": "validation", "job_info_dir": output},
+            extra_vars={"module_dir": module_name, "module_stage": "validation", "job_info_dir": output},
         )
 
     def test_multiline_markdown_is_preserved_in_job_output(self):
@@ -61,26 +64,37 @@ class ValidationOutputTests(unittest.TestCase):
             "Image `rhhi-demo:builder` was not found.\n\n"
             "Review **“Switch to the Builder Variant”**, then validate again."
         )
-        runtime, output = self.runtime_tree(
-            "#!/bin/sh\nset -e\nfail_validation - <<'EOF'\n" + message + "\nEOF\n"
+        runtime, output, module_name, log = self.runtime_tree(
+            "#!/bin/sh\nset -e\necho 'diagnostic on stderr' >&2\nfail_validation - <<'EOF'\n"
+            + message + "\nEOF\n"
         )
-        result = self.run_runtime(runtime, output)
+        result = self.run_runtime(runtime, output, module_name)
         self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertEqual((output / "validation_failure.out").read_text(), message)
         self.assertIn("= FAIL VALIDATION BEGIN", (output / "script.out").read_text())
+        self.assertTrue(log.is_file(), result.stdout + result.stderr)
+        self.assertIn(message, log.read_text())
+        self.assertIn("diagnostic on stderr", log.read_text())
+        self.assertEqual(log.stat().st_mode & 0o777, 0o644)
 
     def test_success_has_no_validation_failure(self):
-        runtime, output = self.runtime_tree("#!/bin/sh\necho validated\n")
-        result = self.run_runtime(runtime, output)
+        runtime, output, module_name, log = self.runtime_tree(
+            "#!/bin/sh\necho validated\necho 'diagnostic on stderr' >&2\n"
+        )
+        result = self.run_runtime(runtime, output, module_name)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("validated", (output / "script.out").read_text())
         self.assertFalse((output / "validation_failure.out").exists())
+        self.assertTrue(log.is_file(), result.stdout + result.stderr)
+        self.assertIn("validated", log.read_text())
+        self.assertIn("diagnostic on stderr", log.read_text())
 
     def test_unmarked_failure_is_not_shown_as_validation_feedback(self):
-        runtime, output = self.runtime_tree("#!/bin/sh\necho 'internal error' >&2\nexit 2\n")
-        result = self.run_runtime(runtime, output)
+        runtime, output, module_name, log = self.runtime_tree("#!/bin/sh\necho 'internal error' >&2\nexit 2\n")
+        result = self.run_runtime(runtime, output, module_name)
         self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertFalse((output / "validation_failure.out").exists())
+        self.assertIn("internal error", log.read_text())
 
     def test_qa_message_does_not_leak_to_following_stage(self):
         qa = self.root / "qa"
