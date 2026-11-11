@@ -6,7 +6,6 @@
 *Objectives:*
 
 * Download the attestations Red Hat publishes for a vendor image
-* Discover that a single attestation bundle carries multiple provenance types
 * Inspect the SLSA build provenance to evaluate build identity, build environment controls, and input materials
 * Trace the image back to its source commit in a public repository
 --
@@ -33,46 +32,40 @@ Red Hat publishes attestations for its images the same way you attached one to y
 
 [source,bash,role=execute,subs=attributes+]
 ----
-cosign download attestation --output-file redhat.sbom \
+cosign download attestation --output-file redhat.att \
   {rhhi-registry}/python:3.12
 ----
 
 [source,bash,role=execute]
 ----
-file redhat.sbom
+file redhat.att
 ----
 ....
-redhat.sbom: New Line Delimited JSON text data
+redhat.att: JSON text data
 ....
 
-Each record is a separate DSSE envelope. List the predicate type of each to see what Red Hat bundles alongside its images.
+We can examine the JSON to see what's included in the attestation.
+[source,bash,role=execute]
+----
+jq 'map_values(type)' redhat.att
+----
+....
+{
+  "payloadType": "string",
+  "payload": "string",
+  "signatures": "array"
+}
+....
+
+The attestation is in the payload string encoded in base64.
+Decoding it into a plain JSON file is a lab convenience, so the rest of this exercise can read it with simpler `jq` filters.
 
 [source,bash,role=execute]
 ----
-jq -r '.payload | @base64d | fromjson | .predicateType' redhat.sbom
+jq -r '.payload | @base64d | fromjson' redhat.att > ~/python-slsa.json
 ----
-.*Expected output:*
-....
-https://slsa.dev/provenance/v0.2
-https://spdx.dev/Document
-....
 
-Red Hat ships two kinds of records in the same attestation bundle: the SPDX SBOM you examined earlier and the SLSA build provenance.
-Your image carries the SBOM alone; Red Hat's images carry both.
-The build provenance is what we'll inspect in this exercise.
-
-[[isolate-slsa]]
-== Isolate the SLSA Provenance
-
-We can extract the SLSA portion from the complete JSON payload using standard tools like `jq`.
-
-[source,bash,role=execute]
-----
-jq -r '
-  select((.payload | @base64d | fromjson | .predicateType) == "https://slsa.dev/provenance/v0.2")
-  | .payload | @base64d | fromjson
-' redhat.sbom > ~/python-slsa.json
-----
+Listing the predicate type on the decoded file confirms the statement is the SLSA build provenance:
 
 [source,bash,role=execute]
 ----
@@ -134,7 +127,7 @@ jq '.predicate.materials[] | select(.uri | startswith("git+"))' ~/python-slsa.js
 ----
 {
   "digest": {
-    "sha1": "c3e2d66d9c626d8145ebac5c67af4a14d2c017ca"
+    "sha1": "31390d26a2611ee3286679e4fedf9825e264dbe7"
   },
   "uri": "git+https://gitlab.com/redhat/hummingbird/containers.git"
 }
@@ -152,11 +145,11 @@ jq '.predicate.materials | length' ~/python-slsa.json
 ----
 .*Expected output (varies):*
 ....
-38
+40
 ....
 
 One is the git commit.
-The other 37 are the Konflux CI build tools -- task runners, artifact stores, the pipeline tasks themselves -- each pinned to an immutable digest.
+The others are the Konflux CI build tools -- task runners, artifact stores, the pipeline tasks themselves -- each pinned to an immutable digest.
 The tool that connects the git commit to the rest of the materials list is the one that enforces the hermetic constraint:
 
 [source,bash,role=execute]
@@ -169,7 +162,7 @@ jq '.predicate.materials[] | select(.uri | contains("hermeto"))' ~/python-slsa.j
 {
   "uri": "oci://quay.io/konflux-ci/hermeto",
   "digest": {
-    "sha256": "887e4fabf1707fc4018275b53fe89c0962ccb61d80d695cce49127096792edae"
+    "sha256": "74b3099b351808ca235af3cefe167e0652e37ad41a5147507bad78aef0aabad5"
   }
 }
 ----
